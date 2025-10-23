@@ -1,321 +1,347 @@
-# Stellplatz-Vermietung System
+# Parking Space Rental System
 
-Ein vollständig digitales und automatisiertes System zur Verwaltung von temporären Stellplatz-Vermietungen (Wohnmobile, Wohnwagen, Boote) mit automatischer Vertragserstellung.
+A fully digital and automated system for managing temporary parking space rentals (motorhomes, caravans, boats) with automatic contract generation.
 
 ## Features
 
-✅ **Digitales Buchungsformular** - Kunden können online buchen mit digitaler Unterschrift
-✅ **Automatische Preisberechnung** - Basierend auf Fahrzeuggröße, Standort und Kategorie
-✅ **Digitale Unterschriften** - Canvas-basierte Signatur für Kunde und Vermieter
-✅ **Admin-Panel** - Vollständige Verwaltung mit Tab-Navigation
-✅ **PDF-Vertragserstellung** - Automatische Generierung professioneller Mietverträge
-✅ **SQLite Datenbank** - Einfach, zuverlässig, keine externe DB nötig
-✅ **Responsive Design** - Funktioniert auf Desktop, Tablet und Smartphone
-✅ **Firmen-Management** - Vollständiges CRUD für Firmendaten mit Rechnungsinformationen
-✅ **Standort-Management** - Verwaltung mehrerer Stellplätze mit Firmenzuordnung
-✅ **Persistente Admin-Session** - Login bleibt über localStorage erhalten
-✅ **Integrierte Navigation** - Direktlinks zwischen Admin-Panel und Formularen
+✅ **Digital Booking Form** - Customers can book online with digital signature
+✅ **Automatic Price Calculation** - Based on vehicle size, location, and category
+✅ **Digital Signatures** - Canvas-based signature for customer and landlord
+✅ **SVG Signature Support** - Scalable vector graphics for high-quality signatures
+✅ **Admin Panel** - Complete management with tab navigation
+✅ **HTML Contract Preview** - View contracts before PDF generation
+✅ **PDF Contract Generation** - Automatic generation of professional rental contracts
+✅ **SQLite Database** - Simple, reliable, no external DB required
+✅ **Responsive Design** - Works on desktop, tablet, and smartphone
+✅ **Company Management** - Full CRUD for company data with billing information
+✅ **Location Management** - Manage multiple parking spaces with company assignment
+✅ **Location-Locked Booking Links** - Send customers preselected location links
+✅ **Persistent Admin Session** - Login persists via localStorage
+✅ **Integrated Navigation** - Direct links between admin panel and forms
 
 ## Installation
 
-### 1. Abhängigkeiten installieren
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Datenbank einrichten
+### 2. Set Up Database
 ```bash
-npm run init-db  # Erstellt leere Datenbank
-npm run seed     # Fügt Beispieldaten ein
+npm run init-db  # Creates empty database
+npm run seed     # Adds sample data
 ```
 
-**ODER beides auf einmal:**
+**OR both at once:**
 ```bash
 npm run reset-db
 ```
 
-### 3. Server starten
+### 3. Start Server
 ```bash
 npm start
 ```
 
-Der Server läuft dann auf `http://localhost:3000`
+The server will run on `http://localhost:3000`
 
-## Verwendung
+## Usage
 
-### Zugriff auf die Anwendung
+### Accessing the Application
 
 - **Homepage:** `http://localhost:3000/`
-- **Buchungsformular:** `http://localhost:3000/booking.html`
+- **Booking Form:** `http://localhost:3000/booking.html`
 - **Admin Panel:** `http://localhost:3000/admin.html`
 
-### Admin-Zugang
+### Admin Access
 
-**Standard Admin Token:** `admin123`
+**Default Admin Token:** `admin123`
 
-Um das Token zu ändern, setzen Sie die Environment-Variable:
+To change the token, set the environment variable:
 ```bash
 export ADMIN_TOKEN="your_secure_token"
 npm start
 ```
 
-### Admin-Panel Funktionen
+### Admin Panel Features
 
-Das Admin-Panel bietet eine **persistente Login-Session** (bleibt auch nach Browser-Neustart erhalten) und hat **3 Hauptbereiche**:
+The admin panel offers a **persistent login session** (remains even after browser restart) and has **3 main areas**:
 
 #### 1. **Dashboard Tab**
-   - Übersicht aller Buchungen mit Status
-   - Statistiken und Kennzahlen
-   - Vermieter-Unterschrift direkt im Panel setzen
-   - PDF-Verträge generieren und herunterladen
-   - Buchungsdetails anzeigen
+   - Overview of all bookings with status
+   - Statistics and metrics
+   - Set landlord signature directly in panel
+   - View HTML contract preview
+   - Generate and download PDF contracts
+   - Display booking details
 
-#### 2. **Firmen Tab**
-   - **CRUD-Operationen**: Anlegen, Bearbeiten, Löschen
-   - **Detaillierte Felder**:
-     - Firmenname
-     - Straße und Hausnummer (getrennt)
-     - PLZ und Ort (getrennt)
-     - Steuernummer
-     - Umsatzsteuer-ID
-     - Kontoinformationen (IBAN, BIC)
-   - **Verwendung**: Firmendaten werden automatisch in PDF-Verträge übernommen
+#### 2. **Companies Tab**
+   - **CRUD Operations**: Create, Edit, Delete
+   - **Detailed Fields**:
+     - Company name
+     - Street and house number (separate)
+     - Postal code and city (separate)
+     - Tax number
+     - VAT ID
+     - Account information (IBAN, BIC)
+   - **Usage**: Company data is automatically included in PDF contracts
 
-#### 3. **Standorte Tab**
-   - **CRUD-Operationen**: Anlegen, Bearbeiten, Löschen
-   - **Felder**:
-     - Name des Standorts
-     - Vollständige Adresse
-     - Gebäude-/Bereichsangabe
-     - Firmenzuordnung (Dropdown)
-   - **Verwendung**: Standorte erscheinen im Buchungsformular
+#### 3. **Locations Tab**
+   - **CRUD Operations**: Create, Edit, Delete
+   - **Fields**:
+     - Location name
+     - Full address
+     - Building/area specification
+     - Company assignment (dropdown)
+     - **Copy booking link** button (🔗)
+   - **Usage**: Locations appear in booking form
 
 #### Navigation
-- **Grüner Button**: Direkt zum Buchungsformular (neuer Tab)
-- **Blauer Button**: Zur Homepage (neuer Tab)
-- **Roter Button**: Abmelden (löscht Session)
+- **Green Button**: Directly to booking form (new tab)
+- **Blue Button**: To homepage (new tab)
+- **Red Button**: Logout (deletes session)
 
-## Datenstruktur
+## Data Structure
 
-### Companies (Firmen)
-Die Firmendaten werden in Verträgen als Vermieter-Information verwendet.
+### Companies
+Company data is used as landlord information in contracts.
 
-**Pflichtfelder:**
-- `name` - Firmenname (muss eindeutig sein)
-- `street` - Straße
-- `house_number` - Hausnummer
-- `postal_code` - Postleitzahl
-- `city` - Ort
+**Required fields:**
+- `name` - Company name (must be unique)
+- `street` - Street
+- `house_number` - House number
+- `postal_code` - Postal code
+- `city` - City
 
 **Optional:**
-- `tax_number` - Steuernummer (z.B. "12/345/67890")
-- `vat_id` - Umsatzsteuer-ID (z.B. "DE123456789")
-- `bank_account` - Kontoinformationen (IBAN, BIC, mehrzeilig möglich)
+- `tax_number` - Tax number (e.g., "12/345/67890")
+- `vat_id` - VAT ID (e.g., "DE123456789")
+- `bank_account` - Account information (IBAN, BIC, multiline possible)
 
-### Locations (Standorte)
-Standorte repräsentieren physische Stellplätze und werden im Buchungsformular angezeigt.
+### Locations
+Locations represent physical parking spaces and are displayed in the booking form.
 
-**Felder:**
-- `name` - Name des Standorts (z.B. "Brandenburg Stellplatz A")
-- `address` - Vollständige Adresse
-- `building_specification` - Gebäude/Bereich (z.B. "Außenbereich Nord", "Halle 1")
-- `company_id` - Zugeordnete Firma (Foreign Key)
+**Fields:**
+- `name` - Location name (e.g., "Brandenburg Parking A")
+- `address` - Full address
+- `building_specification` - Building/area (e.g., "Outdoor area North", "Hall 1")
+- `company_id` - Associated company (Foreign Key)
+- `category` - Type (indoor/outdoor/covered)
 
-**Relation:** Jeder Standort gehört zu einer Firma (ON DELETE SET NULL)
+**Relation:** Each location belongs to one company (ON DELETE SET NULL)
 
-### Vehicle Types (Fahrzeugtypen)
-8 vordefinierte Größenkategorien für Fahrzeuge:
+### Vehicle Types
+8 predefined size categories for vehicles:
 
 | max_length | label        |
 |-----------|--------------|
-| 5.0 m     | bis 5m       |
-| 6.0 m     | bis 6m       |
-| 6.5 m     | bis 6,5m     |
-| 7.0 m     | bis 7m       |
-| 7.5 m     | bis 7,5m     |
-| 8.0 m     | bis 8m       |
-| 8.5 m     | bis 8,5m     |
+| 5.0 m     | up to 5m     |
+| 6.0 m     | up to 6m     |
+| 6.5 m     | up to 6.5m   |
+| 7.0 m     | up to 7m     |
+| 7.5 m     | up to 7.5m   |
+| 8.0 m     | up to 8m     |
+| 8.5 m     | up to 8.5m   |
 
-### Pricing (Preise)
-Preise werden automatisch für alle Kombinationen generiert:
-- **3 Standorte** × **8 Fahrzeugtypen** × **3 Kategorien** = **72 Preiseinträge**
+### Pricing
+Prices are automatically generated for all combinations:
+- **3 Locations** × **8 Vehicle Types** × **3 Categories** = **72 Price Entries**
 
-**Kategorien:**
-- `outside` - Außenstellplatz (50% des Basispreises)
-- `covered` - Überdachter Stellplatz (75% des Basispreises)
-- `indoor` - Hallenstellplatz (100% des Basispreises)
+**Categories:**
+- `outside` - Outdoor parking (50% of base price)
+- `covered` - Covered parking (75% of base price)
+- `indoor` - Indoor parking (100% of base price)
 
-**Beispiel:** Fahrzeug bis 7m in Brandenburg:
-- Außen: 62,50 €/Monat
-- Überdacht: 93,75 €/Monat
-- Halle: 125,00 €/Monat
+**Example:** Vehicle up to 7m in Brandenburg:
+- Outdoor: €62.50/month
+- Covered: €93.75/month
+- Indoor: €125.00/month
 
-### Bookings (Buchungen)
-Vollständige Mietverträge mit digitalem Workflow.
+### Bookings
+Complete rental contracts with digital workflow.
 
-**Kundendaten:**
-- Vorname, Nachname
-- Adresse
-- E-Mail
+**Customer Data:**
+- First name, last name
+- Address
+- Email
 
-**Mietdetails:**
-- Standort (location_id)
-- Fahrzeugtyp (vehicle_type_id)
-- Kategorie (outside/covered/indoor)
-- Startdatum, Enddatum
-- Monatspreis
-- Kaution
+**Rental Details:**
+- Location (location_id)
+- Vehicle type (vehicle_type_id)
+- Category (outside/covered/indoor)
+- Start date, end date
+- Monthly price
+- Deposit
 
-**Status-Workflow:**
-1. `pending_customer_signature` - Kunde hat gebucht, noch nicht unterschrieben
-2. `pending_owner_signature` - Kunde hat unterschrieben, Vermieter muss noch
-3. `completed` - Beide Unterschriften vorhanden
+**Status Workflow:**
+1. `pending_customer_signature` - Customer booked, not yet signed
+2. `pending_owner_signature` - Customer signed, landlord still needs to
+3. `completed` - Both signatures present
 
-**Unterschriften:**
-- `customer_signature_image` - Base64-kodiertes PNG
-- `customer_signature_date` - Zeitstempel
-- `owner_signature_image` - Base64-kodiertes PNG (via Admin-Panel)
-- `owner_signature_date` - Zeitstempel
+**Signatures:**
+- `customer_signature_image` - Base64-encoded PNG
+- `customer_signature_svg` - SVG format (scalable)
+- `customer_signature_date` - Timestamp
+- `owner_signature_image` - Base64-encoded PNG (via admin panel)
+- `owner_signature_svg` - SVG format (scalable)
+- `owner_signature_date` - Timestamp
 
 ## API Endpoints
 
 ### Public APIs
-- `GET /api/locations` - Alle Standorte
-- `GET /api/pricing/:locationId` - Preise für Standort
-- `POST /api/bookings` - Neue Buchung erstellen
-- `GET /api/contract/:bookingId` - PDF-Vertrag herunterladen
+- `GET /api/locations` - All locations
+- `GET /api/pricing/:locationId` - Prices for location
+- `POST /api/bookings` - Create new booking
+- `GET /api/contract/:bookingId` - Download PDF contract
+- `GET /api/contract-preview/:bookingId` - View HTML contract preview
 
-### Admin APIs (mit Bearer Token)
-- `GET /api/admin/dashboard` - Dashboard-Daten
-- `GET /api/admin/bookings` - Alle Buchungen
-- `POST /api/admin/bookings/:id/sign-owner` - Vermieter-Unterschrift
+### Admin APIs (with Bearer Token)
+- `GET /api/admin/dashboard` - Dashboard data
+- `GET /api/admin/bookings` - All bookings
+- `POST /api/admin/bookings/:id/sign-owner` - Landlord signature
 
 #### Companies CRUD
-- `GET /api/admin/companies` - Alle Firmen
-- `GET /api/admin/companies/:id` - Einzelne Firma
-- `POST /api/admin/companies` - Neue Firma
-- `PUT /api/admin/companies/:id` - Firma aktualisieren
-- `DELETE /api/admin/companies/:id` - Firma löschen
+- `GET /api/admin/companies` - All companies
+- `GET /api/admin/companies/:id` - Single company
+- `POST /api/admin/companies` - New company
+- `PUT /api/admin/companies/:id` - Update company
+- `DELETE /api/admin/companies/:id` - Delete company
 
 #### Locations CRUD
-- `GET /api/admin/locations` - Alle Standorte
-- `GET /api/admin/locations/:id` - Einzelner Standort
-- `POST /api/admin/locations` - Neuer Standort
-- `PUT /api/admin/locations/:id` - Standort aktualisieren
-- `DELETE /api/admin/locations/:id` - Standort löschen
+- `GET /api/admin/locations` - All locations
+- `GET /api/admin/locations/:id` - Single location
+- `POST /api/admin/locations` - New location
+- `PUT /api/admin/locations/:id` - Update location
+- `DELETE /api/admin/locations/:id` - Delete location
 
 ## Workflow
 
-### Kompletter Buchungsablauf
+### Complete Booking Process
 
-#### Phase 1: Vorbereitung (einmalig)
-1. **Admin-Panel öffnen** (`http://localhost:3000/admin.html`)
-2. **Firmen anlegen** im "Firmen"-Tab (mit allen Rechnungsdetails)
-3. **Standorte anlegen** im "Standorte"-Tab (mit Firmenzuordnung)
-4. System generiert automatisch **72 Preise** beim Seeding
+#### Phase 1: Preparation (one-time)
+1. **Open admin panel** (`http://localhost:3000/admin.html`)
+2. **Create companies** in "Companies" tab (with all billing details)
+3. **Create locations** in "Locations" tab (with company assignment)
+4. System automatically generates **72 prices** during seeding
 
-#### Phase 2: Kundenbuchung
-1. **Kunde** findet Ihr Angebot (z.B. auf Kleinanzeigen.de, eBay, etc.)
-2. **Sie** senden dem Kunden den Link:
-   - Direkt: `https://yourserver.com/booking.html`
-   - Mit Standort vorausgewählt: `https://yourserver.com/booking.html?location=1`
-3. **Kunde** öffnet Buchungsformular und wählt:
-   - Standort (falls nicht vorausgewählt)
-   - Fahrzeuggröße
-   - Kategorie (Außen/Überdacht/Halle)
-   - Mietdauer (Start-/Enddatum)
-4. System berechnet **automatisch**:
-   - Monatspreis
-   - Kaution (2 Monatsmieten)
-   - Gesamtkosten
-5. **Kunde** gibt persönliche Daten ein
-6. **Kunde** unterschreibt digital auf dem Canvas
-7. **System** speichert Buchung mit Status `pending_owner_signature`
+#### Phase 2: Customer Booking
+1. **Customer** finds your offer (e.g., on classifieds, eBay, etc.)
+2. **You** send the customer the link:
+   - Direct: `https://yourserver.com/booking.html`
+   - With preselected location: `https://yourserver.com/booking.html?location=1`
+   - Copy link directly from admin panel "Locations" tab (🔗 button)
+3. **Customer** opens booking form and selects:
+   - Location (if not preselected - will be locked if preselected)
+   - Vehicle size
+   - Category (outdoor/covered/indoor)
+   - Rental period (start/end date)
+4. System calculates **automatically**:
+   - Monthly price
+   - Deposit (2 months rent)
+   - Total costs
+5. **Customer** enters personal data
+6. **Customer** signs digitally on canvas (stored as both PNG and SVG)
+7. **System** saves booking with status `pending_owner_signature`
 
-#### Phase 3: Vermieter-Bestätigung
-1. **Sie** öffnen Admin-Panel → Dashboard-Tab
-2. Neue Buchung erscheint mit Status **"Pending Owner Signature"**
-3. **Sie** klicken auf "Unterschreiben"
-4. **Sie** unterschreiben digital im Modal
-5. **System** aktualisiert Status auf `completed`
-6. **Unterschreiben-Button** verschwindet, **PDF-Button** wird aktiv
+#### Phase 3: Landlord Confirmation
+1. **You** open admin panel → Dashboard tab
+2. New booking appears with status **"Pending Owner Signature"**
+3. **You** click "View Contract" to preview in HTML
+4. **You** click "Sign" to add your signature
+5. **You** sign digitally in modal
+6. **System** updates status to `completed`
+7. **Sign button** disappears, **PDF button** becomes active
 
-#### Phase 4: Vertragsversand
-1. **Sie** klicken auf "Download PDF"
-2. System generiert **professionellen Mietvertrag** mit:
-   - Firmendaten (aus Companies-Tabelle)
-   - Standortdaten (aus Locations-Tabelle)
-   - Kundendaten
-   - Mietdetails
-   - Beiden Unterschriften (inkl. Zeitstempel)
-3. **Sie** senden PDF per E-Mail an Kunden
-4. **Fertig!** Buchung ist abgeschlossen
+#### Phase 4: Contract Delivery
+1. **You** click "Download PDF"
+2. System generates **professional rental contract** with:
+   - Company data (from Companies table)
+   - Location data (from Locations table)
+   - Customer data
+   - Rental details
+   - Both signatures (including timestamps)
+   - SVG signatures for high quality
+3. **You** send PDF via email to customer
+4. **Done!** Booking is complete
 
-### Wiederkehrende Workflows
+### Location-Locked Booking Links
 
-**Neuer Standort hinzufügen:**
-1. Admin-Panel → Standorte-Tab → "Neue Standorte"
-2. Daten eingeben, Firma zuordnen → Speichern
-3. System aktualisiert automatisch Preistabelle
-4. Standort erscheint sofort im Buchungsformular
+**Workflow:**
+1. Admin panel → Locations tab
+2. Click "🔗 Copy Link" for desired location
+3. Link format: `https://domain.com/booking.html?location=1`
+4. Send link to customer
+5. Customer opens link with location preselected and locked
 
-**Firma bearbeiten:**
-1. Admin-Panel → Firmen-Tab → Firma auswählen → "Bearbeiten"
-2. Änderungen vornehmen → Speichern
-3. Änderungen werden in zukünftigen PDFs verwendet
+**Benefits:**
+- No risk of location confusion
+- Simplified booking process
+- Track which location via which link
 
-## Konfiguration
+### Recurring Workflows
 
-### Preisstruktur anpassen
+**Add new location:**
+1. Admin panel → Locations tab → "New Location"
+2. Enter data, assign company → Save
+3. System automatically updates price table
+4. Location appears immediately in booking form
 
-Bearbeiten Sie `config.js`:
+**Edit company:**
+1. Admin panel → Companies tab → Select company → "Edit"
+2. Make changes → Save
+3. Changes are used in future PDFs
+
+## Configuration
+
+### Adjust Price Structure
+
+Edit `config.js`:
 
 ```javascript
 const BASE_PRICES = {
-  5.0: 100,    // Basispreis für bis 5m
-  6.0: 115,    // Basispreis für bis 6m
+  5.0: 100,    // Base price for up to 5m
+  6.0: 115,    // Base price for up to 6m
   // ...
 };
 
 const CATEGORY_MULTIPLIERS = {
-  outside: 0.50,   // 50% des Basispreises
-  covered: 0.75,   // 75% des Basispreises
-  indoor: 1.0      // 100% des Basispreises
+  outside: 0.50,   // 50% of base price
+  covered: 0.75,   // 75% of base price
+  indoor: 1.0      // 100% of base price
 };
 ```
 
-Nach Änderungen:
+After changes:
 ```bash
-npm run reset-db  # Datenbank neu aufsetzen
-npm start         # Server neu starten
+npm run reset-db  # Reset database
+npm start         # Restart server
 ```
 
 ## Deployment
 
-### Auf einem Server
+### On a Server
 
 ```bash
-# 1. Code auf Server laden
-git clone <your-repo> oder scp/sftp
+# 1. Upload code to server
+git clone <your-repo> or scp/sftp
 
-# 2. Dependencies installieren
+# 2. Install dependencies
 npm install
 
-# 3. Datenbank einrichten
+# 3. Set up database
 npm run reset-db
 
-# 4. Environment-Variable setzen (optional)
+# 4. Set environment variables (optional)
 export ADMIN_TOKEN="your_secure_token"
 export PORT=3000
 
-# 5. Mit PM2 starten (empfohlen)
+# 5. Start with PM2 (recommended)
 npm install -g pm2
 pm2 start server.js --name "stellplatz"
 pm2 save
-pm2 startup  # Autostart konfigurieren
+pm2 startup  # Configure autostart
 ```
 
-### Mit Nginx (Reverse Proxy)
+### With Nginx (Reverse Proxy)
 
 ```nginx
 server {
@@ -335,255 +361,218 @@ server {
 
 ## Troubleshooting
 
-### Datenbank zurücksetzen
+### Reset Database
 
 ```bash
 npm run reset-db
 ```
 
-**Was passiert:**
-- Löscht `stellplatz.db` komplett
-- Erstellt neue Datenbank mit Schema
-- Fügt Beispieldaten ein (2 Firmen, 3 Standorte, 8 Fahrzeugtypen, 72 Preise)
-- **ACHTUNG:** Alle Buchungen gehen verloren!
+**What happens:**
+- Deletes `stellplatz.db` completely
+- Creates new database with schema
+- Adds sample data (2 companies, 3 locations, 8 vehicle types, 72 prices)
+- **WARNING:** All bookings will be lost!
 
-### Admin Login funktioniert nicht
+### Admin Login Not Working
 
-**Symptom:** "Unauthorized" Meldung beim Login
+**Symptom:** "Unauthorized" message at login
 
-**Lösungen:**
-1. Standard-Token verwenden: `admin123`
-2. Browser-localStorage löschen:
+**Solutions:**
+1. Use default token: `admin123`
+2. Clear browser localStorage:
    ```javascript
-   // In Browser-Konsole (F12):
+   // In browser console (F12):
    localStorage.clear()
    ```
-3. Server-seitiges Token prüfen:
+3. Check server-side token:
    ```bash
-   # Token wurde gesetzt?
+   # Token set?
    echo $ADMIN_TOKEN
 
-   # Falls leer, Standard ist "admin123"
+   # If empty, default is "admin123"
    ```
-4. Browser-Konsole (F12) auf Fehler prüfen
+4. Check browser console (F12) for errors
 
-**Persistentes Login deaktivieren:**
-- Browser-localStorage löschen
-- Seite neu laden
+### Prices Not Displayed
 
-### Preise werden nicht angezeigt
+**Symptom:** Booking form shows "No prices available"
 
-**Symptom:** Buchungsformular zeigt "Keine Preise verfügbar"
-
-**Diagnose:**
+**Diagnosis:**
 ```bash
 sqlite3 stellplatz.db "SELECT COUNT(*) FROM pricing;"
 ```
 
-**Sollwert:** 72 (bei 3 Standorten)
+**Expected value:** 72 (with 3 locations)
 
-**Wenn 0:**
+**If 0:**
 ```bash
 npm run seed
 ```
 
-**Wenn Fehler:** "UNIQUE constraint failed"
+**If error:** "UNIQUE constraint failed"
 ```bash
 npm run reset-db
 ```
 
-### Standorte erscheinen nicht im Buchungsformular
+### Locations Not Appearing in Booking Form
 
-**Ursachen:**
-1. Keine Standorte angelegt → Admin-Panel → Standorte-Tab
-2. Keine Firma zugeordnet → Standort bearbeiten, Firma auswählen
-3. Keine Preise → `npm run seed`
+**Causes:**
+1. No locations created → Admin panel → Locations tab
+2. No company assigned → Edit location, select company
+3. No prices → `npm run seed`
 
-**Prüfen:**
+**Check:**
 ```bash
 sqlite3 stellplatz.db "SELECT * FROM locations;"
 sqlite3 stellplatz.db "SELECT COUNT(*) FROM pricing WHERE location_id = 1;"
 ```
 
-### PDF-Generierung schlägt fehl
+### PDF Generation Fails
 
-**Symptom:** Fehler beim PDF-Download
+**Symptom:** Error during PDF download
 
-**Lösungen:**
-1. `temp/` Verzeichnis erstellen:
+**Solutions:**
+1. Create `temp/` directory:
    ```bash
    mkdir -p temp
    chmod 755 temp
    ```
-2. Fehlende Firmendaten → Admin-Panel → Firmen-Tab ausfüllen
-3. Server-Logs prüfen:
+2. Missing company data → Admin panel → Fill Companies tab
+3. Check server logs:
    ```bash
    pm2 logs stellplatz
-   # oder bei direktem Start:
-   # Im Terminal wo `npm start` läuft
+   # or with direct start:
+   # In terminal where `npm start` runs
    ```
 
-### "Foreign Key constraint failed" Fehler
+### Server Won't Start
 
-**Beim Löschen einer Firma:**
-- Firma wird noch von Standorten referenziert
-- **Lösung:** Erst Standorte löschen oder andere Firma zuweisen
-
-**Beim Erstellen eines Standorts:**
-- Firma-ID existiert nicht
-- **Lösung:** Erst Firma anlegen, dann Standort
-
-### Server startet nicht
-
-**Port 3000 bereits belegt:**
+**Port 3000 already in use:**
 ```bash
-# Prozess finden
+# Find process
 lsof -ti:3000
 
-# Prozess beenden
+# Kill process
 kill $(lsof -ti:3000)
 
-# ODER anderen Port verwenden
+# OR use different port
 PORT=3001 npm start
 ```
 
-**Dependencies fehlen:**
+**Dependencies missing:**
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### Buchung wird nicht gespeichert
+## Development
 
-**Browser-Konsole prüfen (F12):**
-- Netzwerk-Tab → Anfrage an `/api/bookings` prüfen
-- Fehler 400 → Validierung fehlgeschlagen (Felder ausfüllen)
-- Fehler 500 → Server-Logs prüfen
-
-**Häufige Ursachen:**
-- Unterschrift fehlt → Canvas neu unterschreiben
-- Enddatum vor Startdatum → Daten korrigieren
-- Keine Preise für Kombination → `npm run seed`
-
-## Entwicklung
-
-### Development-Server starten
+### Start Development Server
 ```bash
-# Mit Auto-Reload (nodemon erforderlich)
+# With auto-reload (requires nodemon)
 npm run dev
 
-# Normale Ausführung
+# Normal execution
 npm start
 ```
 
-### Datenbank-Verwaltung
+### Database Management
 ```bash
-# Interaktive SQLite-Shell
+# Interactive SQLite shell
 sqlite3 stellplatz.db
 
-# Nützliche Queries:
-sqlite> .tables                              # Alle Tabellen anzeigen
-sqlite> .schema companies                    # Schema anzeigen
-sqlite> SELECT * FROM bookings;              # Alle Buchungen
-sqlite> SELECT COUNT(*) FROM pricing;        # Preise zählen
-sqlite> .mode column                         # Schönere Ausgabe
-sqlite> .headers on                          # Spaltenüberschriften
-sqlite> .quit                                # Beenden
+# Useful queries:
+sqlite> .tables                              # Show all tables
+sqlite> .schema companies                    # Show schema
+sqlite> SELECT * FROM bookings;              # All bookings
+sqlite> SELECT COUNT(*) FROM pricing;        # Count prices
+sqlite> .mode column                         # Better output
+sqlite> .headers on                          # Column headers
+sqlite> .quit                                # Exit
 ```
 
-### Logs überwachen
+### Monitor Logs
 ```bash
-# Mit PM2
+# With PM2
 pm2 logs stellplatz
 pm2 logs stellplatz --lines 100
 
 # Direct
-# Im Terminal wo `npm start` läuft
+# In terminal where `npm start` runs
 ```
 
-### Testing-Workflow
-1. **Datenbank zurücksetzen**: `npm run reset-db`
-2. **Server starten**: `npm start`
-3. **Browser öffnen**: `http://localhost:3000`
-4. **Admin-Login**: Token `admin123`
-5. **Testbuchung erstellen**:
-   - Buchungsformular öffnen
-   - Standort wählen
-   - Formulare ausfüllen
-   - Unterschreiben
-6. **Im Admin unterschreiben**
-7. **PDF herunterladen**
-
-### Code-Struktur
+### Code Structure
 ```
 rent-it-digital/
-├── server.js           # Express-Server + API-Endpunkte
-├── database.js         # SQLite-Schema + Initialisierung
-├── seed.js             # Beispieldaten
-├── config.js           # Preis-Konfiguration
-├── package.json        # Dependencies + Scripts
-├── stellplatz.db       # SQLite-Datenbank (generiert)
+├── server.js                    # Express server + API endpoints
+├── database.js                  # SQLite schema + initialization
+├── seed.js                      # Sample data
+├── config.js                    # Price configuration
+├── migrate-add-svg-signatures.js # Migration script
+├── package.json                 # Dependencies + scripts
+├── stellplatz.db                # SQLite database (generated)
+├── CONTRACT.md                  # Contract template (German)
 ├── public/
-│   ├── index.html      # Homepage
-│   ├── booking.html    # Buchungsformular
-│   └── admin.html      # Admin-Panel (Tabs + CRUD)
-└── temp/               # PDF-Generierung (temporär)
+│   ├── index.html               # Homepage
+│   ├── booking.html             # Booking form
+│   └── admin.html               # Admin panel (tabs + CRUD)
+└── temp/                        # PDF generation (temporary)
 ```
 
-## Technologie-Stack
+## Technology Stack
 
 - **Backend**: Node.js + Express.js
-- **Datenbank**: SQLite3 (better-sqlite3)
+- **Database**: SQLite3 (better-sqlite3)
 - **PDF**: PDFKit
 - **Frontend**: Vanilla JavaScript + HTML5 + CSS3
-- **Signatur**: HTML5 Canvas API
+- **Signature**: HTML5 Canvas API (PNG + SVG export)
 - **Auth**: Bearer Token (localStorage)
 
-## Sicherheitshinweise
+## Security Notes
 
-⚠️ **Für Produktivbetrieb beachten:**
+⚠️ **For production use:**
 
-1. **Admin-Token ändern:**
+1. **Change admin token:**
    ```bash
    export ADMIN_TOKEN="your_very_secure_random_token_here"
    ```
-   Verwenden Sie einen starken, zufälligen Token (mind. 32 Zeichen)
+   Use a strong, random token (min. 32 characters)
 
-2. **HTTPS verwenden:**
-   - Nginx mit Let's Encrypt SSL-Zertifikat
-   - Nie unverschlüsselt über öffentliches Internet
+2. **Use HTTPS:**
+   - Nginx with Let's Encrypt SSL certificate
+   - Never unencrypted over public internet
 
-3. **Datenbank-Backups:**
+3. **Database backups:**
    ```bash
-   # Täglich Backup erstellen
+   # Create daily backup
    cp stellplatz.db backups/stellplatz_$(date +%Y%m%d).db
    ```
 
-4. **Rate Limiting:**
-   - Express-Rate-Limit für API-Endpunkte empfohlen
-   - Schutz vor Brute-Force-Angriffen
+4. **Rate limiting:**
+   - Express-rate-limit recommended for API endpoints
+   - Protection against brute-force attacks
 
-5. **Eingabe-Validierung:**
-   - Bereits implementiert für kritische Felder
-   - XSS-Schutz durch PDFKit-Encoding
+5. **Input validation:**
+   - Already implemented for critical fields
+   - XSS protection through PDFKit encoding
 
-6. **Dateisystem:**
-   - `temp/` Verzeichnis regelmäßig aufräumen
-   - Alte PDFs automatisch löschen
+6. **Filesystem:**
+   - Clean `temp/` directory regularly
+   - Automatically delete old PDFs
 
-## Lizenz
+## License
 
-Proprietary - Alle Rechte vorbehalten
+Proprietary - All rights reserved
 
 ## Support
 
-Bei Fragen oder Problemen:
-- Troubleshooting-Sektion konsultieren
-- Browser-Konsole (F12) auf Fehler prüfen
-- Server-Logs überprüfen
+For questions or problems:
+- Consult troubleshooting section
+- Check browser console (F12) for errors
+- Review server logs
 
 ---
 **Version:** 1.0.0
-**Letzte Aktualisierung:** Oktober 2025
-**Node.js Version:** ≥ 18.x empfohlen
+**Last Updated:** October 2025
+**Node.js Version:** ≥ 18.x recommended
 **Status:** Production Ready ✅
