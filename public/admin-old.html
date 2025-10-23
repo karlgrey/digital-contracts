@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Stellplatz Verwaltung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .bookings-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .bookings-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            margin-right: 4px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background: #5568d3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        .signature-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            margin: 20px 0;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+            cursor: crosshair;
+            background: white;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-container">
+        <div class="login-box">
+            <h1>Admin Login</h1>
+            <div class="form-group">
+                <label for="adminToken">Admin Token</label>
+                <input type="password" id="adminToken" placeholder="Token eingeben">
+            </div>
+            <button class="login-btn" onclick="loginAdmin()">Anmelden</button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminSection" style="display: none;">
+        <header>
+            <h1>Stellplatz Admin Panel</h1>
+            <button class="logout-btn" onclick="logoutAdmin()">Abmelden</button>
+        </header>
+
+        <div class="container">
+            <div class="stats" id="statsContainer"></div>
+
+            <div class="bookings-section">
+                <h2>Buchungen (zuletzt aktualisiert)</h2>
+                <table id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kunde</th>
+                            <th>Location</th>
+                            <th>Fahrzeug</th>
+                            <th>Status</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature Modal -->
+    <div id="signatureModal" class="modal">
+        <div class="modal-content">
+            <h2>Vertrag unterschreiben</h2>
+            <p>Bitte unterschreiben Sie hier digital:</p>
+            <div class="signature-area">
+                <canvas id="adminSignatureCanvas" width="400" height="150"></canvas>
+                <button class="action-btn" onclick="clearAdminSignature()" style="width: auto; margin: 0; background: #ff6b6b;">Löschen</button>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="submitAdminSignature()">Unterzeichnen</button>
+                <button class="btn-secondary" onclick="closeSignatureModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = null;
+        let currentBookingForSignature = null;
+
+        // Login
+        function loginAdmin() {
+            const token = document.getElementById('adminToken').value;
+            if (!token) {
+                alert('Bitte Token eingeben');
+                return;
+            }
+            
+            adminToken = token;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('adminSection').style.display = 'block';
+            loadDashboard();
+        }
+
+        // Logout
+        function logoutAdmin() {
+            adminToken = null;
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'flex';
+            document.getElementById('adminToken').value = '';
+        }
+
+        // Dashboard laden
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/admin/dashboard', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (response.status === 401) {
+                    alert('Token ungültig');
+                    logoutAdmin();
+                    return;
+                }
+
+                const data = await response.json();
+                
+                // Stats anzeigen
+                const statsHtml = `
+                    <div class="stat-box">
+                        <div class="stat-label">Gesamt Buchungen</div>
+                        <div class="stat-value">${data.stats.totalBookings}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Warten auf Unterschrift (Kunde)</div>
+                        <div class="stat-value">${data.stats.pendingCustomerSignature}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Warten auf Unterschrift (Vermieter)</div>
+                        <div class="stat-value">${data.stats.pendingOwnerSignature}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Abgeschlossen</div>
+                        <div class="stat-value">${data.stats.completed}</div>
+                    </div>
+                `;
+                
+                document.getElementById('statsContainer').innerHTML = statsHtml;
+                loadBookings();
+            } catch (error) {
+                alert('Fehler beim Laden: ' + error.message);
+            }
+        }
+
+        // Bookings laden
+        async function loadBookings() {
+            try {
+                const response = await fetch('/api/admin/bookings', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (response.status === 401) {
+                    logoutAdmin();
+                    return;
+                }
+
+                const bookings = await response.json();
+                const tbody = document.querySelector('#bookingsTable tbody');
+                tbody.innerHTML = '';
+
+                bookings.forEach(booking => {
+                    const statusLabel = booking.status === 'completed' ? 'Abgeschlossen' : 
+                                       booking.status === 'pending_owner_signature' ? 'Vermieter unterschreiben' :
+                                       'Kunde unterschreiben';
+                    const statusClass = booking.status === 'completed' ? 'status-completed' : 'status-pending';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${booking.id}</td>
+                        <td>${booking.first_name} ${booking.last_name}</td>
+                        <td>${booking.location_name}</td>
+                        <td>${booking.vehicle_length}m</td>
+                        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                        <td>
+                            <button class="action-btn" onclick="viewBooking(${booking.id})">Anschauen</button>
+                            ${booking.status === 'pending_owner_signature' ? `<button class="action-btn" onclick="openSignatureModal(${booking.id})">Unterschreiben</button>` : ''}
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                alert('Fehler beim Laden der Buchungen: ' + error.message);
+            }
+        }
+
+        // Booking anschauen
+        function viewBooking(bookingId) {
+            window.open(`/api/contract/${bookingId}`, '_blank');
+        }
+
+        // Signature Modal
+        const adminCanvas = document.getElementById('adminSignatureCanvas');
+        const adminCtx = adminCanvas.getContext('2d');
+        let adminIsDrawing = false;
+
+        adminCanvas.addEventListener('mousedown', () => adminIsDrawing = true);
+        adminCanvas.addEventListener('mousemove', (e) => {
+            if (!adminIsDrawing) return;
+            const rect = adminCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            adminCtx.lineTo(x, y);
+            adminCtx.lineWidth = 2;
+            adminCtx.stroke();
+        });
+        adminCanvas.addEventListener('mouseup', () => adminIsDrawing = false);
+        adminCanvas.addEventListener('mouseout', () => adminIsDrawing = false);
+
+        adminCanvas.addEventListener('mousedown', (e) => {
+            const rect = adminCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            adminCtx.beginPath();
+            adminCtx.moveTo(x, y);
+        });
+
+        function clearAdminSignature() {
+            adminCtx.clearRect(0, 0, adminCanvas.width, adminCanvas.height);
+        }
+
+        function openSignatureModal(bookingId) {
+            currentBookingForSignature = bookingId;
+            clearAdminSignature();
+            document.getElementById('signatureModal').classList.add('active');
+        }
+
+        function closeSignatureModal() {
+            document.getElementById('signatureModal').classList.remove('active');
+            currentBookingForSignature = null;
+        }
+
+        async function submitAdminSignature() {
+            if (!currentBookingForSignature) return;
+
+            const imageData = adminCanvas.toDataURL();
+            
+            try {
+                const response = await fetch(`/api/admin/bookings/${currentBookingForSignature}/sign-owner`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ signatureImage: imageData })
+                });
+
+                if (response.ok) {
+                    alert('Unterschrift gespeichert!');
+                    closeSignatureModal();
+                    loadBookings();
+                } else {
+                    alert('Fehler beim Speichern der Unterschrift');
+                }
+            } catch (error) {
+                alert('Fehler: ' + error.message);
+            }
+        }
+
+        // Auto-reload alle 30 Sekunden
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

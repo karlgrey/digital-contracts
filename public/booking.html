@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellplatz Buchung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .price-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .price-display .label {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .price-display .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .signature-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+            cursor: crosshair;
+            background: white;
+        }
+
+        .canvas-buttons {
+            display: flex;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #e0e0e0;
+        }
+
+        button.clear-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+        }
+
+        button.clear-btn:hover {
+            background: #ff5252;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c00;
+            display: none;
+        }
+
+        .success {
+            background: #efe;
+            color: #080;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #080;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #0d47a1;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stellplatz Buchung</h1>
+        <p class="subtitle">Bitte füllen Sie das Formular aus und unterschreiben Sie digital.</p>
+
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Verarbeitung läuft...</p>
+        </div>
+
+        <form id="bookingForm">
+            <!-- Location -->
+            <div class="form-group">
+                <label for="location">Standort *</label>
+                <select id="location" required onchange="updatePricing()">
+                    <option value="">-- Bitte wählen --</option>
+                </select>
+                <div class="info-box" id="locationInfo" style="display:none;"></div>
+            </div>
+
+            <!-- Fahrzeugtyp -->
+            <div class="form-group">
+                <label for="vehicleType">Fahzeuggröße *</label>
+                <select id="vehicleType" required onchange="updatePricing()">
+                    <option value="">-- Bitte wählen --</option>
+                </select>
+            </div>
+
+            <!-- Preisanzeige -->
+            <div class="price-display" id="priceDisplay" style="display:none;">
+                <div class="label">Monatliche Miete (Netto):</div>
+                <div class="amount" id="priceAmount">€ 0,00</div>
+                <div class="label" style="font-size: 0.9em; color: #666; margin-top: 5px;">zzgl. 19% MwSt (wird im Vertrag berechnet)</div>
+            </div>
+
+            <!-- Mietdauer -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mietbeginn *</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="startMonth" required onchange="updateStartDate()" style="flex: 1;">
+                            <option value="">Monat</option>
+                            <option value="01">Januar</option>
+                            <option value="02">Februar</option>
+                            <option value="03">März</option>
+                            <option value="04">April</option>
+                            <option value="05">Mai</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Dezember</option>
+                        </select>
+                        <select id="startYear" required onchange="updateStartDate()" style="flex: 1;">
+                            <option value="">Jahr</option>
+                        </select>
+                    </div>
+                    <div class="info-box" id="startDateDisplay" style="display:none; margin-top: 5px;"></div>
+                    <input type="hidden" id="startDate">
+                </div>
+                <div class="form-group">
+                    <label>Mietende *</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="endMonth" required onchange="updateEndDate()" style="flex: 1;">
+                            <option value="">Monat</option>
+                            <option value="01">Januar</option>
+                            <option value="02">Februar</option>
+                            <option value="03">März</option>
+                            <option value="04">April</option>
+                            <option value="05">Mai</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Dezember</option>
+                        </select>
+                        <select id="endYear" required onchange="updateEndDate()" style="flex: 1;">
+                            <option value="">Jahr</option>
+                        </select>
+                    </div>
+                    <div class="info-box" id="endDateDisplay" style="display:none; margin-top: 5px;"></div>
+                    <input type="hidden" id="endDate">
+                </div>
+            </div>
+
+            <!-- Kundendaten -->
+            <div class="form-group">
+                <label for="firstName">Vorname *</label>
+                <input type="text" id="firstName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Nachname *</label>
+                <input type="text" id="lastName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Adresse *</label>
+                <input type="text" id="address" required placeholder="Straße, Hausnummer, PLZ Ort">
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-Mail-Adresse *</label>
+                <input type="email" id="email" required>
+            </div>
+
+            <!-- Unterschrift -->
+            <div class="form-group">
+                <label>Unterschrift *</label>
+                <p style="font-size: 13px; color: #666; margin-bottom: 8px;">Bitte unterschreiben Sie hier digital:</p>
+                <div class="signature-area">
+                    <canvas id="signatureCanvas" width="400" height="300"></canvas>
+                    <div class="canvas-buttons">
+                        <button type="button" class="clear-btn" onclick="clearSignature()">Unterschrift löschen</button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Vertrag einreichen</button>
+        </form>
+    </div>
+
+    <script>
+        let currentPricing = null;
+        let locationsData = [];
+        const baseUrl = window.location.origin;
+        const urlParams = new URLSearchParams(window.location.search);
+        const preselectedLocation = urlParams.get('location');
+
+        // Signature Canvas
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let paths = []; // Store all paths for SVG export
+        let currentPath = []; // Current path being drawn
+
+        // Höhere Auflösung für Canvas
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.scale(ratio, ratio);
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch Support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup', {});
+            canvas.dispatchEvent(mouseEvent);
+        });
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            currentPath = [{x, y}]; // Start new path
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            currentPath.push({x, y}); // Add point to current path
+            ctx.lineTo(x, y);
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (isDrawing && currentPath.length > 0) {
+                paths.push([...currentPath]); // Save completed path
+            }
+            isDrawing = false;
+            currentPath = [];
+        }
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            paths = [];
+            currentPath = [];
+        }
+
+        function canvasToSVG() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
+
+            paths.forEach(path => {
+                if (path.length < 2) return;
+
+                let pathData = `M ${path[0].x} ${path[0].y}`;
+                for (let i = 1; i < path.length; i++) {
+                    pathData += ` L ${path[i].x} ${path[i].y}`;
+                }
+
+                svg += `<path d="${pathData}" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+            });
+
+            svg += '</svg>';
+            return svg;
+        }
+
+        // Locations laden
+        async function loadLocations() {
+            try {
+                const response = await fetch('/api/locations');
+                const locations = await response.json();
+                locationsData = locations; // Store for later use
+                const select = document.getElementById('location');
+
+                locations.forEach(loc => {
+                    const option = document.createElement('option');
+                    option.value = loc.id;
+                    option.textContent = `${loc.name}${loc.building_specification ? ' (' + loc.building_specification + ')' : ''}`;
+                    select.appendChild(option);
+                });
+
+                // Preselect and lock if URL parameter exists
+                if (preselectedLocation) {
+                    select.value = preselectedLocation;
+                    select.disabled = true;
+                    select.style.backgroundColor = '#f5f5f5';
+                    select.style.cursor = 'not-allowed';
+
+                    // Add info message
+                    const locationGroup = select.closest('.form-group');
+                    const infoMsg = document.createElement('p');
+                    infoMsg.style.fontSize = '12px';
+                    infoMsg.style.color = '#666';
+                    infoMsg.style.marginTop = '5px';
+                    infoMsg.textContent = '✓ Standort wurde für Sie vorausgewählt';
+                    locationGroup.appendChild(infoMsg);
+
+                    updatePricing();
+                }
+            } catch (error) {
+                showError('Fehler beim Laden der Standorte: ' + error.message);
+            }
+        }
+
+        // Pricing aktualisieren
+        async function updatePricing() {
+            const locationId = document.getElementById('location').value;
+            const vehicleTypeId = document.getElementById('vehicleType').value;
+            const locationInfoDiv = document.getElementById('locationInfo');
+
+            // Show Stellplatz-Typ when location is selected
+            if (locationId) {
+                const selectedLocation = locationsData.find(loc => loc.id == locationId);
+                if (selectedLocation) {
+                    const categoryLabels = {
+                        'outside': 'Außenstellplatz',
+                        'covered': 'Überdacht',
+                        'indoor': 'Halle'
+                    };
+                    const categoryLabel = categoryLabels[selectedLocation.category] || selectedLocation.category;
+                    locationInfoDiv.textContent = `Stellplatz-Typ: ${categoryLabel}`;
+                    locationInfoDiv.style.display = 'block';
+                }
+            } else {
+                locationInfoDiv.style.display = 'none';
+            }
+
+            // Vehicle Types neu laden wenn Location gewechselt
+            if (locationId && !document.getElementById('vehicleType').value) {
+                await loadVehicleTypes(locationId);
+            }
+
+            if (locationId && vehicleTypeId) {
+                try {
+                    const response = await fetch(`/api/pricing/${locationId}`);
+                    const pricing = await response.json();
+
+                    const selected = pricing.find(p => p.vehicle_type_id == vehicleTypeId);
+
+                    if (selected) {
+                        const netPrice = selected.price_per_month.toFixed(2);
+                        document.getElementById('priceAmount').textContent = `€ ${netPrice}`;
+                        document.getElementById('priceDisplay').style.display = 'block';
+                        currentPricing = selected;
+                    }
+                } catch (error) {
+                    showError('Fehler beim Laden der Preise: ' + error.message);
+                }
+            } else {
+                document.getElementById('priceDisplay').style.display = 'none';
+            }
+        }
+
+        // Vehicle Types laden
+        async function loadVehicleTypes(locationId) {
+            try {
+                const response = await fetch(`/api/pricing/${locationId}`);
+                const pricing = await response.json();
+                const select = document.getElementById('vehicleType');
+                select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+                
+                const unique = {};
+                pricing.forEach(p => {
+                    if (!unique[p.vehicle_type_id]) {
+                        unique[p.vehicle_type_id] = p;
+                    }
+                });
+
+                Object.values(unique).forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.vehicle_type_id;
+                    option.textContent = p.label;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                showError('Fehler beim Laden der Fahrzeugtypen: ' + error.message);
+            }
+        }
+
+        // Formular absenden
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Signatur prüfen
+            if (paths.length === 0) {
+                showError('Bitte unterschreiben Sie das Formular!');
+                return;
+            }
+            const imageData = canvas.toDataURL();
+            const svgData = canvasToSVG();
+
+            // Validierung
+            if (!currentPricing) {
+                showError('Bitte wählen Sie Standort, Fahzeuggröße und Stellplatz-Typ aus!');
+                return;
+            }
+
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            if (endDate <= startDate) {
+                showError('Das Mietende muss nach dem Mietbeginn liegen!');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        locationId: document.getElementById('location').value,
+                        vehicleTypeId: document.getElementById('vehicleType').value,
+                        firstName: document.getElementById('firstName').value,
+                        lastName: document.getElementById('lastName').value,
+                        address: document.getElementById('address').value,
+                        email: document.getElementById('email').value,
+                        startDate: document.getElementById('startDate').value,
+                        endDate: document.getElementById('endDate').value,
+                        monthlyPrice: currentPricing.price_per_month,
+                        caution: currentPricing.price_per_month,
+                        customerSignatureImage: imageData,
+                        customerSignatureSVG: svgData
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess(`Vertrag erfolgreich eingereicht! Vertrag-ID: ${data.bookingId}`);
+                    document.getElementById('bookingForm').reset();
+                    clearSignature();
+                    document.getElementById('priceDisplay').style.display = 'none';
+                } else {
+                    showError('Fehler beim Speichern: ' + data.error);
+                }
+            } catch (error) {
+                showError('Fehler: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('bookingForm').style.display = show ? 'none' : 'block';
+        }
+
+        // Populate year dropdowns
+        function populateYears() {
+            const currentYear = new Date().getFullYear();
+            const startYearSelect = document.getElementById('startYear');
+            const endYearSelect = document.getElementById('endYear');
+
+            // Add years from current year to 5 years in the future
+            for (let i = 0; i <= 5; i++) {
+                const year = currentYear + i;
+                const option1 = document.createElement('option');
+                option1.value = year;
+                option1.textContent = year;
+                startYearSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = year;
+                option2.textContent = year;
+                endYearSelect.appendChild(option2);
+            }
+        }
+
+        // Update start date from month/year selection
+        function updateStartDate() {
+            const month = document.getElementById('startMonth').value;
+            const year = document.getElementById('startYear').value;
+            const displayDiv = document.getElementById('startDateDisplay');
+
+            console.log('updateStartDate called, month:', month, 'year:', year);
+
+            if (month && year) {
+                // Set to 1st of the month
+                const startDate = `${year}-${month}-01`;
+                document.getElementById('startDate').value = startDate;
+
+                console.log('Start date set to:', startDate);
+
+                // Display formatted date
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                displayDiv.textContent = `Vertragsbeginn: ${dateObj.toLocaleDateString('de-DE', options)}`;
+                displayDiv.style.display = 'block';
+            } else {
+                displayDiv.style.display = 'none';
+            }
+        }
+
+        // Update end date from month/year selection
+        function updateEndDate() {
+            const month = document.getElementById('endMonth').value;
+            const year = document.getElementById('endYear').value;
+            const displayDiv = document.getElementById('endDateDisplay');
+
+            console.log('updateEndDate called, month:', month, 'year:', year);
+
+            if (month && year) {
+                // Set to last day of the month
+                const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+                const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+                document.getElementById('endDate').value = endDate;
+
+                console.log('End date set to:', endDate);
+
+                // Display formatted date
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, lastDay);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                displayDiv.textContent = `Vertragsende: ${dateObj.toLocaleDateString('de-DE', options)}`;
+                displayDiv.style.display = 'block';
+            } else {
+                displayDiv.style.display = 'none';
+            }
+        }
+
+        // Init
+        populateYears();
+        loadLocations();
+    </script>
+</body>
+</html>

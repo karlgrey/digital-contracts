@@ -1,0 +1,22 @@
+{
+  "name": "stellplatz-booking",
+  "version": "1.0.0",
+  "description": "Digitale Stellplatz-Vermietung mit automatischer Vertragserstellung",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-db": "node -e \"require('./database.js')\"",
+    "seed": "node seed.js",
+    "reset-db": "rm -f stellplatz.db && npm run init-db && npm run seed"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2",
+    "better-sqlite3": "^11.8.1",
+    "pdfkit": "^0.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

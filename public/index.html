@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellplatz-Vermietung - Willkommen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 40px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            border-radius: 12px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .tagline {
+            color: #666;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .main-content {
+            background: white;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .feature p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-admin {
+            background: #6c757d;
+            color: white;
+            font-size: 0.9em;
+            padding: 10px 20px;
+        }
+
+        .btn-admin:hover {
+            background: #5a6268;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .info-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .info-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .info-section p {
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .admin-link {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚐 Stellplatz-Vermietung</h1>
+            <p class="tagline">Digitale Stellplatz-Buchung für Wohnmobile und Boote</p>
+        </header>
+
+        <div class="main-content">
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">📋</div>
+                    <h3>Einfache Buchung</h3>
+                    <p>Schnelles und unkompliziertes Online-Buchungsformular mit digitaler Unterschrift</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">💰</div>
+                    <h3>Faire Preise</h3>
+                    <p>Transparente Preisberechnung basierend auf Fahrzeuggröße und Stellplatz-Kategorie</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📄</div>
+                    <h3>Automatischer Vertrag</h3>
+                    <p>Professionelle Vertragserstellung als PDF mit allen rechtlichen Details</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Sicher & Digital</h3>
+                    <p>Sichere Datenspeicherung und vollständig digitaler Prozess</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="/booking.html" class="btn btn-primary">Jetzt Stellplatz buchen</a>
+                <a href="#info" class="btn btn-secondary" onclick="scrollToInfo()">Mehr Informationen</a>
+            </div>
+
+            <div class="info-section" id="info">
+                <h2>Wie funktioniert es?</h2>
+                <p><strong>1. Standort wählen:</strong> Wählen Sie Ihren gewünschten Stellplatz-Standort aus unserer Liste.</p>
+                <p><strong>2. Details angeben:</strong> Geben Sie Ihre persönlichen Daten und Fahrzeuginformationen ein.</p>
+                <p><strong>3. Kategorie wählen:</strong> Wählen Sie zwischen Außenstellplatz, überdachtem Platz oder Hallenstellplatz.</p>
+                <p><strong>4. Digital unterschreiben:</strong> Unterschreiben Sie den Vertrag direkt online mit Ihrer digitalen Unterschrift.</p>
+                <p><strong>5. Fertig!</strong> Sie erhalten Ihren Vertrag als PDF und können Ihren Stellplatz nutzen.</p>
+            </div>
+
+            <div class="admin-link">
+                <a href="/admin.html" class="btn btn-admin">Admin-Bereich</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Stellplatz-Vermietung - Digitale Verwaltung für temporäre Stellplätze</p>
+    </footer>
+
+    <script>
+        function scrollToInfo() {
+            document.getElementById('info').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
