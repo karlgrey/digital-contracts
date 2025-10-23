@@ -1,65 +1,65 @@
-# ⚡ Quick Reference für Claude Code
+# ⚡ Quick Reference for Claude Code
 
-## Die 5 wichtigsten Prompts
+## The 5 Most Important Prompts
 
-### 1️⃣ Projekt starten
+### 1️⃣ Start Project
 ```bash
-claude-code "Lese die komplette Datei CLAUDE-CODE-SPEC.md.
+claude-code "Read the complete file CLAUDE-CODE-SPEC.md.
 
-Implementiere ein Node.js + Express Buchungssystem für Stellplätze mit:
+Implement a Node.js + Express booking system for parking spaces with:
 - server.js (REST API)
 - database.js (SQLite)
-- config.js (Preise)
-- booking.html (Kundenformular)
-- admin.html (Admin-Dashboard)
+- config.js (Pricing)
+- booking.html (Customer form)
+- admin.html (Admin dashboard)
 - package.json
 
-Folge EXAKT der Spezifikation in CLAUDE-CODE-SPEC.md"
+Follow EXACTLY the specification in CLAUDE-CODE-SPEC.md"
 ```
 
-### 2️⃣ Fehler beheben
+### 2️⃣ Fix Errors
 ```bash
-claude-code "Der Server startet nicht mit Error: [ERROR HERE]
+claude-code "The server won't start with Error: [ERROR HERE]
 
-Schau dir server.js Zeile [X-Y] an und behebe das Problem."
+Look at server.js lines [X-Y] and fix the problem."
 ```
 
-### 3️⃣ Feature hinzufügen
+### 3️⃣ Add Feature
 ```bash
-claude-code "Füge in admin.html einen Status-Filter hinzu nach SPEC.md Abschnitt 'Admin Endpoints'"
+claude-code "Add a status filter to admin.html according to SPEC.md section 'Admin Endpoints'"
 ```
 
-### 4️⃣ Code optimieren
+### 4️⃣ Optimize Code
 ```bash
-claude-code "Überprüfe booking.html auf Performance und Sicherheitslücken. Optimiere."
+claude-code "Check booking.html for performance and security issues. Optimize."
 ```
 
-### 5️⃣ Deployment vorbereiten
+### 5️⃣ Prepare Deployment
 ```bash
-claude-code "Erstelle ein DEPLOYMENT.md mit exakten Befehlen für:
-- Node.js Installation
+claude-code "Create a DEPLOYMENT.md with exact commands for:
+- Node.js installation
 - npm install
-- PM2 Setup
-- Nginx Konfiguration
+- PM2 setup
+- Nginx configuration
 - SSL/HTTPS"
 ```
 
 ---
 
-## Schnelles Setup (Copy-Paste)
+## Quick Setup (Copy-Paste)
 
 ```bash
-# 1. Projekt-Ordner
+# 1. Project folder
 mkdir stellplatz && cd stellplatz
 
-# 2. Claude Code starten
+# 2. Start Claude Code
 claude-code
 
-# 3. Größeren Prompt einfügen (siehe "Die 5 wichtigsten Prompts" → 1️⃣)
+# 3. Paste larger prompt (see "The 5 Most Important Prompts" → 1️⃣)
 
-# 4. Warten bis fertig
+# 4. Wait until finished
 
-# 5. Testen
+# 5. Test
 npm install
 npm run init-db
 npm start
@@ -69,26 +69,26 @@ npm start
 
 ---
 
-## API-Endpoints Quick Check
+## API Endpoints Quick Check
 
-| Endpoint | Methode | Beschreibung |
+| Endpoint | Method | Description |
 |----------|---------|-------------|
-| `/api/locations` | GET | Alle Standorte |
-| `/api/pricing/:locationId` | GET | Preise für Location |
-| `/api/bookings` | POST | Neue Buchung |
-| `/api/contract/:bookingId` | GET | PDF herunterladen |
-| `/api/admin/dashboard` | GET | Stats (mit Token) |
-| `/api/admin/bookings/:id/sign-owner` | POST | Unterschreiben (mit Token) |
+| `/api/locations` | GET | All locations |
+| `/api/pricing/:locationId` | GET | Prices for location |
+| `/api/bookings` | POST | New booking |
+| `/api/contract/:bookingId` | GET | Download PDF |
+| `/api/admin/dashboard` | GET | Stats (with token) |
+| `/api/admin/bookings/:id/sign-owner` | POST | Sign (with token) |
 
 ---
 
-## Datenbank-Struktur Quick Look
+## Database Structure Quick Look
 
 ```
 locations: id, name, company, city
 vehicle_types: id, max_length (5.0-8.5), label
 pricing: id, location_id, vehicle_type_id, category, price_per_month
-bookings: id, location_id, vehicle_type_id, category, 
+bookings: id, location_id, vehicle_type_id, category,
           first_name, last_name, address, email,
           start_date, end_date, monthly_price, caution,
           status, customer_signature_image, owner_signature_image
@@ -96,50 +96,50 @@ bookings: id, location_id, vehicle_type_id, category,
 
 ---
 
-## Preisberechnung Formel
+## Price Calculation Formula
 
 ```
-Endpreis = Basis-Preis × Kategorie-Multiplier × 1.19 (MwSt)
+Final Price = Base Price × Category Multiplier × 1.19 (VAT)
 
-Beispiel: Wohnmobil bis 5m, Außen (50%), mit MwSt
-= 100 € × 0.50 × 1.19 = 59,50 € (mit MwSt)
+Example: Motorhome up to 5m, Outdoor (50%), with VAT
+= 100 € × 0.50 × 1.19 = 59.50 € (incl. VAT)
 ```
 
 ---
 
-## Status-Flows
+## Status Flows
 
 ```
-Neu → pending_customer_signature
-         ↓ (Kunde unterschreibt)
+New → pending_customer_signature
+         ↓ (Customer signs)
       pending_owner_signature
-         ↓ (Du unterschreibst)
+         ↓ (You sign)
       completed ✓
-      
-      (oder cancelled)
+
+      (or cancelled)
 ```
 
 ---
 
-## Nützliche Befehle
+## Useful Commands
 
 ```bash
-# Server starten
+# Start server
 npm start
 
-# Datenbank zurücksetzen
+# Reset database
 rm stellplatz.db && npm run init-db
 
-# Logs anschauen (wenn mit PM2)
+# View logs (if using PM2)
 pm2 logs stellplatz
 
-# Server stoppen
+# Stop server
 pm2 stop stellplatz
 
-# Token ändern
-nano .env  # oder Editor öffnen
+# Change token
+nano .env  # or open editor
 
-# SQLite Browser
+# SQLite browser
 sqlite3 stellplatz.db
 > SELECT * FROM bookings;
 > .quit
@@ -147,39 +147,39 @@ sqlite3 stellplatz.db
 
 ---
 
-## Häufige Claude Code Fehler & Fixes
+## Common Claude Code Errors & Fixes
 
-| Problem | Lösung |
+| Problem | Solution |
 |---------|--------|
-| "Module not found" | `npm install` ausführen |
-| "Port already in use" | `npm start -- --port 3001` oder Process killen |
-| "ENOENT: no such file" | Überprüfe Pfade in Imports |
-| "SQLite corrupt" | `rm stellplatz.db` + neu starten |
-| "Signature not saving" | Canvas-to-Base64 Konvertierung debuggen |
+| "Module not found" | Run `npm install` |
+| "Port already in use" | `npm start -- --port 3001` or kill process |
+| "ENOENT: no such file" | Check paths in imports |
+| "SQLite corrupt" | `rm stellplatz.db` + restart |
+| "Signature not saving" | Debug Canvas-to-Base64 conversion |
 
 ---
 
-## Datei-Übersicht
+## File Overview
 
 ```
 📦 stellplatz-booking/
-├── 📄 server.js (Hauptdatei)
-├── 📄 database.js (Datenbank)
-├── 📄 config.js (Preise)
+├── 📄 server.js (Main file)
+├── 📄 database.js (Database)
+├── 📄 config.js (Prices)
 ├── 📄 package.json
-├── 📄 .env (GEHEIM!)
+├── 📄 .env (SECRET!)
 ├── 📁 public/
-│   ├── booking.html (Kunde)
-│   └── admin.html (Du)
-└── 📄 stellplatz.db (Datenbank-Datei)
+│   ├── booking.html (Customer)
+│   └── admin.html (You)
+└── 📄 stellplatz.db (Database file)
 ```
 
 ---
 
-## Environment-Variablen
+## Environment Variables
 
 ```bash
-# .env Datei
+# .env file
 PORT=3000
 ADMIN_TOKEN=your_super_secret_token_here
 NODE_ENV=production
@@ -187,25 +187,25 @@ NODE_ENV=production
 
 ---
 
-## Test-Checklist
+## Test Checklist
 
-- [ ] npm start läuft
-- [ ] booking.html lädt auf Port 3000
-- [ ] Formular ausgefüllt → POST /api/bookings funktioniert
-- [ ] admin.html lädt mit Token
-- [ ] PDF Download funktioniert
-- [ ] Signatur-Canvas zeichnet sich
-- [ ] Unterschrift speichert
+- [ ] npm start runs
+- [ ] booking.html loads on port 3000
+- [ ] Form filled out → POST /api/bookings works
+- [ ] admin.html loads with token
+- [ ] PDF download works
+- [ ] Signature canvas draws
+- [ ] Signature saves
 
 ---
 
 ## Deployment Quick Checklist
 
 ```bash
-# Auf dem Server:
-ssh user@server.de
+# On the server:
+ssh user@server.com
 
-# Im Server Terminal:
+# In server terminal:
 cd /var/www/stellplatz
 npm install
 npm run init-db
@@ -213,59 +213,59 @@ pm2 start server.js --name "stellplatz"
 pm2 startup
 pm2 save
 
-# Überprüfen:
+# Check:
 pm2 logs stellplatz
 curl http://localhost:3000/api/locations
 
-# Client-Link verteilen:
-https://domain.de/booking.html?location=1
-https://domain.de/admin.html (Token eingeben)
+# Distribute client links:
+https://domain.com/booking.html?location=1
+https://domain.com/admin.html (enter token)
 ```
 
 ---
 
 ## 🔗 Location-Locked Booking Links
 
-### Workflow: Links mit vorausgewähltem Standort
+### Workflow: Links with preselected location
 
-1. **Im Admin-Panel:**
-   - Gehe zu "Standorte verwalten"
-   - Klicke auf "🔗 Link kopieren" beim gewünschten Standort
-   - Link wird in Zwischenablage kopiert
+1. **In Admin Panel:**
+   - Go to "Manage Locations"
+   - Click "🔗 Copy Link" for desired location
+   - Link is copied to clipboard
 
 2. **Link Format:**
    ```
-   https://domain.de/booking.html?location=1
+   https://domain.com/booking.html?location=1
    ```
 
-3. **Was passiert:**
-   - Kunde öffnet Link
-   - Standort-Dropdown ist vorausgewählt und gesperrt
-   - Kunde sieht: "✓ Standort wurde für Sie vorausgewählt"
-   - Kunde kann nur noch restliche Daten eingeben
+3. **What happens:**
+   - Customer opens link
+   - Location dropdown is preselected and locked
+   - Customer sees: "✓ Location has been preselected for you"
+   - Customer can only enter remaining data
 
-4. **Vorteile:**
-   - Keine Verwechslungsgefahr bei Standorten
-   - Vereinfachter Buchungsprozess für Kunden
-   - Tracking welcher Standort über welchen Link gebucht wird
+4. **Benefits:**
+   - No risk of location confusion
+   - Simplified booking process for customers
+   - Track which location was booked via which link
 
 ---
 
-## Locations Eintragen (nach Deploy)
+## Adding Locations (after Deploy)
 
 ```bash
-# SSH auf Server
-ssh user@server.de
+# SSH to server
+ssh user@server.com
 
-# SQLite öffnen
+# Open SQLite
 cd /var/www/stellplatz
 sqlite3 stellplatz.db
 
-# Im SQLite Prompt:
-INSERT INTO locations (name, company, city) VALUES 
-('Potsdam', 'Firma A GmbH', 'Potsdam'),
-('Brandenburg', 'Firma A GmbH', 'Brandenburg'),
-('Frankfurt/Oder', 'Firma B GmbH', 'Frankfurt/Oder');
+# In SQLite prompt:
+INSERT INTO locations (name, company, city) VALUES
+('Potsdam', 'Company A GmbH', 'Potsdam'),
+('Brandenburg', 'Company A GmbH', 'Brandenburg'),
+('Frankfurt/Oder', 'Company B GmbH', 'Frankfurt/Oder');
 
 SELECT * FROM locations;
 .quit
@@ -273,7 +273,7 @@ SELECT * FROM locations;
 
 ---
 
-## Support-Kanäle
+## Support Channels
 
 - **Claude Code Docs:** https://docs.claude.com/en/docs/claude-code
 - **Express Docs:** https://expressjs.com/
@@ -282,4 +282,4 @@ SELECT * FROM locations;
 
 ---
 
-**Pro-Tip:** Speichere diese Datei als Bookmark! 🚀
+**Pro-Tip:** Save this file as a bookmark! 🚀
