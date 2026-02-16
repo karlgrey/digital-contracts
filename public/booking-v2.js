@@ -98,7 +98,16 @@ async function loadLocations() {
         // Pre-select if from invite or location deeplink
         if (state.selectedLocation) {
             select.value = state.selectedLocation;
-            select.dispatchEvent(new Event('change'));
+
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption) {
+                document.getElementById('location-address').textContent = selectedOption.dataset.address || '';
+
+                const locationCategory = selectedOption.dataset.category;
+                if (locationCategory) {
+                    state.selectedCategory = locationCategory;
+                }
+            }
 
             if (locationLocked) {
                 select.disabled = true;
@@ -137,6 +146,23 @@ async function loadVehicleTypes() {
     }
 }
 
+// Lock category buttons to a specific category
+function lockCategory(category) {
+    state.selectedCategory = category;
+    document.querySelectorAll('.segmented-control button').forEach(btn => {
+        const btnCategory = btn.dataset.category;
+        if (btnCategory === category) {
+            btn.classList.add('active');
+            btn.disabled = false;
+            btn.style.opacity = '';
+        } else {
+            btn.classList.remove('active');
+            btn.disabled = true;
+            btn.style.opacity = '0.3';
+        }
+    });
+}
+
 // Event listeners
 function attachEventListeners() {
     // Location change
@@ -148,20 +174,7 @@ function attachEventListeners() {
         // Lock category based on location's assigned category
         const locationCategory = selectedOption.dataset.category;
         if (locationCategory) {
-            state.selectedCategory = locationCategory;
-
-            // Update segmented control buttons
-            document.querySelectorAll('.segmented-control button').forEach(btn => {
-                const btnCategory = btn.dataset.category;
-                if (btnCategory === locationCategory) {
-                    btn.classList.add('active');
-                    btn.disabled = false;
-                } else {
-                    btn.classList.remove('active');
-                    btn.disabled = true;
-                    btn.style.opacity = '0.3';
-                }
-            });
+            lockCategory(locationCategory);
         }
 
         updatePricing();
@@ -188,8 +201,10 @@ function attachEventListeners() {
         });
     });
 
-    // Pre-select category if from invite
-    if (state.selectedCategory) {
+    // Pre-select and lock category if location has a fixed category
+    if (state.selectedCategory && state.selectedLocation) {
+        lockCategory(state.selectedCategory);
+    } else if (state.selectedCategory) {
         document.querySelector(`[data-category="${state.selectedCategory}"]`)?.click();
     }
 
