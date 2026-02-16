@@ -1090,17 +1090,20 @@ app.delete('/api/admin/companies/:id', auth.requireAuth, validators.idParam, (re
       });
     }
 
-    if (locationCount > 0) {
-      // Delete bookings for all locations of this company
-      db.prepare('DELETE FROM bookings WHERE location_id IN (SELECT id FROM locations WHERE company_id = ?)').run(req.params.id);
+    const deleteAll = db.transaction(() => {
+      const locationIds = db.prepare('SELECT id FROM locations WHERE company_id = ?').all(req.params.id).map(r => r.id);
+      for (const locId of locationIds) {
+        db.prepare('DELETE FROM bookings WHERE location_id = ?').run(locId);
+        db.prepare('DELETE FROM invite_tokens WHERE location_id = ?').run(locId);
+        db.prepare('DELETE FROM location_blackouts WHERE location_id = ?').run(locId);
+        db.prepare('DELETE FROM pricing_rules WHERE location_id = ?').run(locId);
+        db.prepare('DELETE FROM pricing_overrides WHERE location_id = ?').run(locId);
+        db.prepare('DELETE FROM discounts WHERE location_id = ?').run(locId);
+      }
       db.prepare('DELETE FROM locations WHERE company_id = ?').run(req.params.id);
-    }
-
-    const result = db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
+      db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
+    });
+    deleteAll();
 
     auth.logAudit(db, req.user.role, 'company_deleted', 'company', req.params.id, { locationsDeleted: locationCount }, req.ip, req.get('user-agent'));
 
@@ -1196,15 +1199,16 @@ app.delete('/api/admin/locations/:id', auth.requireAuth, validators.idParam, (re
       });
     }
 
-    if (bookingCount > 0) {
+    const deleteAll = db.transaction(() => {
       db.prepare('DELETE FROM bookings WHERE location_id = ?').run(req.params.id);
-    }
-
-    const result = db.prepare('DELETE FROM locations WHERE id = ?').run(req.params.id);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Location not found' });
-    }
+      db.prepare('DELETE FROM invite_tokens WHERE location_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM location_blackouts WHERE location_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM pricing_rules WHERE location_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM pricing_overrides WHERE location_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM discounts WHERE location_id = ?').run(req.params.id);
+      db.prepare('DELETE FROM locations WHERE id = ?').run(req.params.id);
+    });
+    deleteAll();
 
     auth.logAudit(db, req.user.role, 'location_deleted', 'location', req.params.id, { bookingsDeleted: bookingCount }, req.ip, req.get('user-agent'));
 
