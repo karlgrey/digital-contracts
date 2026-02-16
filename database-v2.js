@@ -308,6 +308,9 @@ E-Mail: {{customer_email}}
 
 (2) Eine Untervermietung ist ausgeschlossen. Eine Wohnnutzung/Übernachtung ist untersagt.
 
+(3) Nach Ablauf der in Abs. (1) vereinbarten Mietzeit verlängert sich das Mietverhältnis auf unbestimmte Zeit jeweils um einen Monat, sofern es nicht von einer der Vertragsparteien mit einer Frist von einem Monat zum Monatsende gekündigt wird.
+Die Kündigung bedarf der Textform; die Übermittlung per E-Mail ist ausreichend.
+
 ## §3 Miete / Zahlung / Kaution
 
 (1) Miete: € {{net_price}} monatlich (Netto) + € {{vat_amount}} (19% MwSt.) = € {{gross_price}} (Brutto).
