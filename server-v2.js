@@ -253,7 +253,7 @@ const renderMarkdownToPDF = (doc, renderedBody) => {
       doc.fontSize(13).font('Helvetica-Bold').text(line.substring(4), { lineGap: 5 });
       doc.moveDown(0.5);
     } else if (line.startsWith('## ')) {
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
       doc.fontSize(16).font('Helvetica-Bold').text(line.substring(3), { align: 'center', lineGap: 5 });
       doc.moveDown(0.7);
     } else {
