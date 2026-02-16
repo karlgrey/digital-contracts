@@ -153,7 +153,7 @@ const checkBlackouts = (db, locationId, startDate, endDate) => {
 /**
  * Calculate deposit (caution)
  */
-const calculateDeposit = (monthlyPrice, multiplier = 2) => {
+const calculateDeposit = (monthlyPrice, multiplier = 1) => {
   return Math.round(monthlyPrice * multiplier * 100) / 100;
 };
 

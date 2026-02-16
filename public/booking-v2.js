@@ -248,7 +248,7 @@ async function updatePricing() {
             state.pricing.monthlyPriceNet = netPrice;
             state.pricing.vatAmount = vat;
             state.pricing.monthlyPrice = grossPrice;
-            state.pricing.depositAmount = grossPrice * 2;
+            state.pricing.depositAmount = grossPrice * 1;
 
             // Calculate pro-rata if start date is set
             if (state.startDate) {
@@ -602,7 +602,7 @@ async function submitBooking() {
             customerSignatureImage: signatureImage,
             customerSignatureSVG: signatureSVG,
             discountCode: state.discountCode || null,
-            depositMultiplier: 2,
+            depositMultiplier: 1,
             billingCycle: 'monthly',
             noticePeriodDays: 30
         };

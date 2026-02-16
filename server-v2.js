@@ -273,7 +273,7 @@ app.post('/api/bookings', validators.createBooking, (req, res) => {
     const discountAmount = discountResult.discountAmount;
 
     // Calculate deposit
-    const deposit = pricing.calculateDeposit(monthlyPrice, depositMultiplier || 2);
+    const deposit = pricing.calculateDeposit(monthlyPrice, depositMultiplier || 1);
 
     // Calculate total
     const totalAmount = pricing.calculateTotalBilling(
