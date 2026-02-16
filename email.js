@@ -73,7 +73,12 @@ const sendAdminNotification = async (booking, adminEmail) => {
             <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Fahrzeugtyp</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${booking.vehicle_label}</td></tr>
             <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Monatsmiete (netto)</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600;">€ ${booking.monthly_price.toFixed(2)}</td></tr>
           </table>
-          <p>Bitte melden Sie sich im Admin-Panel an, um den Vertrag zu prüfen und zu unterschreiben.</p>
+          <p style="margin-top: 24px;">
+            <a href="${process.env.BASE_URL || 'https://str.remoterepublic.com'}/admin.html"
+               style="display: inline-block; background: #667eea; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">
+              Vertrag prüfen &amp; unterschreiben
+            </a>
+          </p>
         </div>
       `
     });
