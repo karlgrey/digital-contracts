@@ -242,35 +242,35 @@ const renderMarkdownToPDF = (doc, renderedBody) => {
 
     if (!line) {
       // Empty line = paragraph break
-      doc.moveDown(0.6);
+      doc.moveDown(0.7);
       continue;
     }
 
     if (line.startsWith('# ')) {
-      doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), { align: 'center', lineGap: 5 });
-      doc.moveDown(1);
+      doc.fontSize(22).font('Helvetica-Bold').text(line.substring(2), { align: 'center', lineGap: 6 });
+      doc.moveDown(1.2);
     } else if (line.startsWith('### ')) {
-      doc.fontSize(11).font('Helvetica-Bold').text(line.substring(4), { lineGap: 4 });
-      doc.moveDown(0.4);
-    } else if (line.startsWith('## ')) {
-      doc.moveDown(0.3);
-      doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3), { lineGap: 4 });
+      doc.fontSize(13).font('Helvetica-Bold').text(line.substring(4), { lineGap: 5 });
       doc.moveDown(0.5);
+    } else if (line.startsWith('## ')) {
+      doc.moveDown(1.5);
+      doc.fontSize(16).font('Helvetica-Bold').text(line.substring(3), { align: 'center', lineGap: 5 });
+      doc.moveDown(0.7);
     } else {
       // Handle bold markers: render **text** in bold
       const cleanLine = line.replace(/\*\*/g, '');
       const isBold = line.startsWith('**') && line.endsWith('**');
-      doc.fontSize(10).font(isBold ? 'Helvetica-Bold' : 'Helvetica').text(cleanLine, { lineGap: 2 });
+      doc.fontSize(12).font(isBold ? 'Helvetica-Bold' : 'Helvetica').text(cleanLine, { lineGap: 3 });
     }
   }
 };
 
 const renderSignatures = (doc, booking) => {
   doc.moveDown(2);
-  doc.fontSize(11).font('Helvetica-Bold').text('Unterschriften');
+  doc.fontSize(13).font('Helvetica-Bold').text('Unterschriften');
   doc.moveDown(0.5);
 
-  doc.fontSize(9).font('Helvetica').text('Mieter:');
+  doc.fontSize(11).font('Helvetica').text('Mieter:');
   const mieterSignY = doc.y;
   if (booking.customer_signature_svg) {
     renderSVGSignature(doc, booking.customer_signature_svg, 70, mieterSignY);
@@ -283,7 +283,7 @@ const renderSignatures = (doc, booking) => {
   }
   doc.moveDown(2);
 
-  doc.fontSize(9).font('Helvetica').text('Vermieter:');
+  doc.fontSize(11).font('Helvetica').text('Vermieter:');
   const vermieterSignY = doc.y;
   if (booking.owner_signature_svg) {
     renderSVGSignature(doc, booking.owner_signature_svg, 70, vermieterSignY);
@@ -296,7 +296,7 @@ const renderSignatures = (doc, booking) => {
   }
 
   doc.moveDown(2);
-  doc.fontSize(7).fillColor('#666');
+  doc.fontSize(8).fillColor('#666');
   doc.text(`Contract ID: ${booking.id} | Template v${booking.template_version} | Terms: ${booking.terms_hash?.substring(0, 16)}... | Generated: ${new Date().toISOString()}`, { align: 'center' });
 };
 
@@ -692,24 +692,25 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
             text-align: center;
             color: #1d1d1f;
             margin-bottom: 30px;
-            font-size: 28px;
+            font-size: 34px;
             font-weight: 600;
         }
         h2 {
             color: #1d1d1f;
-            margin-top: 25px;
-            margin-bottom: 10px;
-            font-size: 16px;
+            text-align: center;
+            margin-top: 35px;
+            margin-bottom: 12px;
+            font-size: 19px;
             font-weight: 600;
         }
         h3 {
             color: #1d1d1f;
-            font-size: 14px;
+            font-size: 17px;
             font-weight: 600;
         }
         p {
-            margin: 8px 0;
-            font-size: 13px;
+            margin: 10px 0;
+            font-size: 16px;
             color: #1d1d1f;
             text-align: justify;
         }
