@@ -235,29 +235,46 @@ const renderSVGSignature = (doc, svgString, x, y, scale = 0.25) => {
 };
 
 const renderMarkdownToPDF = (doc, renderedBody) => {
-  const lines = renderedBody.split('\n');
+  // Pre-process: trim lines, identify headings, strip blanks adjacent to headings
+  const rawLines = renderedBody.split('\n');
+  const trimmed = rawLines.map(l => l.trim());
+  const isHeading = (l) => l && (l.startsWith('# ') || l.startsWith('## ') || l.startsWith('### '));
+
+  const lines = [];
+  for (let i = 0; i < trimmed.length; i++) {
+    const line = trimmed[i];
+    // Skip blank lines directly before or after a heading
+    if (!line) {
+      const prev = i > 0 ? trimmed[i - 1] : '';
+      const next = i < trimmed.length - 1 ? trimmed[i + 1] : '';
+      if (isHeading(prev) || isHeading(next)) continue;
+    }
+    lines.push(line);
+  }
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
 
     if (!line) {
-      // Empty line = paragraph break
-      doc.moveDown(0.7);
+      doc.moveDown(0.5);
       continue;
     }
 
     if (line.startsWith('# ')) {
       doc.fontSize(22).font('Helvetica-Bold').text(line.substring(2), { align: 'center', lineGap: 6 });
-      doc.moveDown(1.2);
+      doc.moveDown(1.0);
     } else if (line.startsWith('### ')) {
       doc.fontSize(13).font('Helvetica-Bold').text(line.substring(4), { lineGap: 5 });
-      doc.moveDown(0.5);
-    } else if (line.startsWith('## ')) {
-      doc.moveDown(0.8);
-      doc.fontSize(16).font('Helvetica-Bold').text(line.substring(3), { align: 'center', lineGap: 5 });
       doc.moveDown(0.3);
+    } else if (line.startsWith('## ')) {
+      doc.moveDown(1.0);
+      doc.fontSize(16).font('Helvetica-Bold').text(line.substring(3), { align: 'center', lineGap: 5 });
+      doc.moveDown(0.4);
+    } else if (line === '---') {
+      doc.moveDown(0.5);
+      doc.moveTo(72, doc.y).lineTo(doc.page.width - 72, doc.y).lineWidth(0.5).stroke();
+      doc.moveDown(0.5);
     } else {
-      // Handle bold markers: render **text** in bold
       const cleanLine = line.replace(/\*\*/g, '');
       const isBold = line.startsWith('**') && line.endsWith('**');
       doc.fontSize(12).font(isBold ? 'Helvetica-Bold' : 'Helvetica').text(cleanLine, { lineGap: 3 });
