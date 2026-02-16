@@ -623,7 +623,11 @@ async function submitBooking() {
             document.getElementById('successStep').classList.remove('hidden');
             document.querySelector('.steps').style.display = 'none';
         } else {
-            alert('Fehler: ' + (result.error || 'Unbekannter Fehler'));
+            let errorMsg = result.error || 'Unbekannter Fehler';
+            if (result.details && result.details.length > 0) {
+                errorMsg += '\n' + result.details.map(d => `${d.field}: ${d.message}`).join('\n');
+            }
+            alert('Fehler: ' + errorMsg);
             submitBtn.disabled = false;
             document.getElementById('submitText').style.display = 'inline';
             document.getElementById('submitLoading').style.display = 'none';
