@@ -369,26 +369,6 @@
             to { transform: rotate(360deg); }
         }
 
-        .discount-input {
-            display: flex;
-            gap: 8px;
-        }
-
-        .discount-input input {
-            flex: 1;
-        }
-
-        .discount-applied {
-            background: #34c759;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 8px;
-        }
 
         @media (max-width: 768px) {
             .header h1 {
@@ -478,14 +458,6 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="discountCode">Rabattcode (optional)</label>
-                    <div class="discount-input">
-                        <input type="text" id="discountCode" class="form-control" placeholder="Code eingeben">
-                        <button type="button" class="btn btn-secondary" id="applyDiscount">Einlösen</button>
-                    </div>
-                    <div id="discount-status"></div>
-                </div>
             </div>
 
             <div class="price-box">
@@ -505,10 +477,6 @@
                 <div class="price-row" id="proRataRow" style="display:none;">
                     <span class="label">Anteilige Miete (1. Monat)</span>
                     <span class="value" id="proRataPrice">-</span>
-                </div>
-                <div class="price-row" id="discountRow" style="display:none;">
-                    <span class="label">Rabatt</span>
-                    <span class="value" style="color: #34c759;" id="discountAmount">-</span>
                 </div>
                 <div class="price-row">
                     <span class="label">Kaution (1 Monatsmiete)</span>
