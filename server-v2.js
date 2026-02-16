@@ -13,6 +13,7 @@ const db = require('./database-v2');
 const auth = require('./auth');
 const validators = require('./validation');
 const pricing = require('./pricing');
+const email = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -358,6 +359,32 @@ app.post('/api/bookings', validators.createBooking, (req, res) => {
     }, clientIp, userAgent);
 
     res.json({ success: true, bookingId: result.lastInsertRowid });
+
+    // Send emails (async, non-blocking)
+    const vehicleType = db.prepare('SELECT label FROM vehicle_types WHERE id = ?').get(vehicleTypeId);
+    const bookingData = {
+      id: result.lastInsertRowid,
+      first_name: firstName,
+      last_name: lastName,
+      email: email,
+      location_name: location.company_name ? `${location.name}` : location.name,
+      category: category,
+      vehicle_label: vehicleType?.label || '',
+      start_date: startDate,
+      end_date: endDate,
+      monthly_price: monthlyPrice,
+      caution: deposit
+    };
+
+    email.sendBookingConfirmation(bookingData);
+
+    // Get company email for admin notification
+    const company = location.company_id
+      ? db.prepare('SELECT email FROM companies WHERE id = ?').get(location.company_id)
+      : null;
+    if (company?.email) {
+      email.sendAdminNotification(bookingData, company.email);
+    }
   } catch (error) {
     console.error('Booking error:', error);
     if (error.message === 'NO_PRICE_RULE') {
@@ -998,6 +1025,87 @@ app.post('/api/admin/bookings/:bookingId/sign-owner', auth.requireAuth, validato
     auth.logAudit(db, req.user.role, 'owner_signed', 'booking', bookingId, null, clientIp, userAgent);
 
     res.json({ success: true });
+
+    // Send contract completion email with PDF (async, non-blocking)
+    try {
+      const completedBooking = db.prepare(`
+        SELECT b.*, l.name as location_name, c.email as company_email,
+               vt.label as vehicle_label, ct.body_md as template_body
+        FROM bookings b
+        JOIN locations l ON b.location_id = l.id
+        LEFT JOIN companies c ON l.company_id = c.id
+        JOIN vehicle_types vt ON b.vehicle_type_id = vt.id
+        LEFT JOIN contract_templates ct ON b.template_id = ct.id
+        WHERE b.id = ?
+      `).get(bookingId);
+
+      if (completedBooking) {
+        // Generate PDF as buffer
+        const PDFDocEmail = require('pdfkit');
+        const netPrice = completedBooking.monthly_price;
+        const vatAmount = pricing.calculateVAT(netPrice);
+        const grossPrice = netPrice + vatAmount;
+        const categoryLabels = { outside: 'Außenstellplatz', covered: 'Überdacht', indoor: 'Halle' };
+
+        const templateData = {
+          company_name: completedBooking.company_name || '',
+          company_street: completedBooking.company_street || '',
+          company_house_number: completedBooking.company_house_number || '',
+          company_postal_code: completedBooking.company_postal_code || '',
+          company_city: completedBooking.company_city || '',
+          company_email: completedBooking.company_email || '',
+          customer_first_name: completedBooking.first_name,
+          customer_last_name: completedBooking.last_name,
+          customer_address: completedBooking.address,
+          customer_email: completedBooking.email,
+          location_address: completedBooking.location_name,
+          category_label: categoryLabels[completedBooking.category],
+          vehicle_label: completedBooking.vehicle_label,
+          access_code: completedBooking.access_code || null,
+          start_date: new Date(completedBooking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+          end_date: new Date(completedBooking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+          net_price: netPrice.toFixed(2),
+          vat_amount: vatAmount.toFixed(2),
+          gross_price: grossPrice.toFixed(2),
+          prorata_amount: completedBooking.prorata_amount ? (completedBooking.prorata_amount + pricing.calculateVAT(completedBooking.prorata_amount)).toFixed(2) : null,
+          discount_code: completedBooking.discount_amount > 0 ? completedBooking.discount_code : null,
+          discount_amount: completedBooking.discount_amount > 0 ? completedBooking.discount_amount.toFixed(2) : null,
+          caution: completedBooking.caution.toFixed(2),
+          contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+        };
+
+        const renderedBody = pricing.renderTemplate(completedBooking.template_body || '', templateData);
+
+        // Build PDF into buffer
+        const doc = new PDFDocEmail({ bufferPages: true, margin: 50, size: 'A4' });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          email.sendContractCompleted(completedBooking, pdfBuffer, completedBooking.company_email);
+        });
+
+        // Render markdown to PDF (simplified)
+        const lines = renderedBody.split('\n');
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) { doc.moveDown(0.5); continue; }
+          if (line.startsWith('# ')) {
+            doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), { align: 'center' });
+            doc.moveDown(0.8);
+          } else if (line.startsWith('## ')) {
+            doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3));
+            doc.moveDown(0.4);
+          } else {
+            doc.fontSize(10).font('Helvetica').text(line.replace(/\*\*/g, ''), { align: 'justify', lineGap: 3 });
+            doc.moveDown(0.3);
+          }
+        }
+        doc.end();
+      }
+    } catch (emailError) {
+      console.error('Error sending contract email:', emailError);
+    }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
