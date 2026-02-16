@@ -255,7 +255,7 @@ const renderMarkdownToPDF = (doc, renderedBody) => {
     } else if (line.startsWith('## ')) {
       doc.moveDown(0.8);
       doc.fontSize(16).font('Helvetica-Bold').text(line.substring(3), { align: 'center', lineGap: 5 });
-      doc.moveDown(0.7);
+      doc.moveDown(0.3);
     } else {
       // Handle bold markers: render **text** in bold
       const cleanLine = line.replace(/\*\*/g, '');
