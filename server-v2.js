@@ -205,6 +205,190 @@ app.get('/api/availability', (req, res) => {
   }
 });
 
+// ==================== SHARED PDF GENERATION ====================
+
+const renderSVGSignature = (doc, svgString, x, y, scale = 0.25) => {
+  if (!svgString) return;
+  try {
+    const pathMatches = svgString.matchAll(/<path d="([^"]+)"/g);
+    for (const match of pathMatches) {
+      const pathData = match[1];
+      const commands = pathData.split(/(?=[ML])/);
+      let firstPoint = true;
+      for (const cmd of commands) {
+        const type = cmd[0];
+        const coords = cmd.slice(1).trim().split(/\s+/).map(c => parseFloat(c));
+        if (type === 'M' && coords.length >= 2) {
+          doc.moveTo(x + coords[0] * scale, y + coords[1] * scale);
+          firstPoint = false;
+        } else if (type === 'L' && coords.length >= 2) {
+          doc.lineTo(x + coords[0] * scale, y + coords[1] * scale);
+        }
+      }
+      if (!firstPoint) {
+        doc.stroke();
+      }
+    }
+  } catch (error) {
+    console.error('Error rendering SVG signature:', error);
+  }
+};
+
+const renderMarkdownToPDF = (doc, renderedBody) => {
+  const lines = renderedBody.split('\n');
+  let currentParagraph = [];
+
+  const flushParagraph = () => {
+    if (currentParagraph.length > 0) {
+      const paragraphText = currentParagraph.join(' ');
+      doc.fontSize(10).font('Helvetica').text(paragraphText, { align: 'justify', lineGap: 4 });
+      doc.moveDown(0.8);
+      currentParagraph = [];
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { flushParagraph(); continue; }
+    if (line.startsWith('# ')) {
+      flushParagraph();
+      doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), { align: 'center', lineGap: 5 });
+      doc.moveDown(1);
+    } else if (line.startsWith('### ')) {
+      flushParagraph();
+      doc.fontSize(11).font('Helvetica-Bold').text(line.substring(4), { lineGap: 4 });
+      doc.moveDown(0.4);
+    } else if (line.startsWith('## ')) {
+      flushParagraph();
+      doc.moveDown(0.3);
+      doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3), { lineGap: 4 });
+      doc.moveDown(0.5);
+    } else {
+      currentParagraph.push(line.replace(/\*\*/g, ''));
+    }
+  }
+  flushParagraph();
+};
+
+const renderSignatures = (doc, booking) => {
+  doc.moveDown(2);
+  doc.fontSize(11).font('Helvetica-Bold').text('Unterschriften');
+  doc.moveDown(0.5);
+
+  doc.fontSize(9).font('Helvetica').text('Mieter:');
+  const mieterSignY = doc.y;
+  if (booking.customer_signature_svg) {
+    renderSVGSignature(doc, booking.customer_signature_svg, 70, mieterSignY);
+  }
+  doc.y = mieterSignY + 40;
+  doc.moveTo(70, doc.y).lineTo(270, doc.y).stroke();
+  if (booking.customer_signature_date) {
+    const sigDate = new Date(booking.customer_signature_date).toLocaleDateString('de-DE');
+    doc.text(`(${booking.first_name} ${booking.last_name}, ${sigDate})`, 70, doc.y + 3);
+  }
+  doc.moveDown(2);
+
+  doc.fontSize(9).font('Helvetica').text('Vermieter:');
+  const vermieterSignY = doc.y;
+  if (booking.owner_signature_svg) {
+    renderSVGSignature(doc, booking.owner_signature_svg, 70, vermieterSignY);
+  }
+  doc.y = vermieterSignY + 40;
+  doc.moveTo(70, doc.y).lineTo(270, doc.y).stroke();
+  if (booking.owner_signature_date) {
+    const ownerSigDate = new Date(booking.owner_signature_date).toLocaleDateString('de-DE');
+    doc.text(`(${booking.company_name}, ${ownerSigDate})`, 70, doc.y + 3);
+  }
+
+  doc.moveDown(2);
+  doc.fontSize(7).fillColor('#666');
+  doc.text(`Contract ID: ${booking.id} | Template v${booking.template_version} | Terms: ${booking.terms_hash?.substring(0, 16)}... | Generated: ${new Date().toISOString()}`, { align: 'center' });
+};
+
+const getBookingForContract = (bookingId) => {
+  return db.prepare(`
+    SELECT
+      b.*,
+      l.name as location_name,
+      l.address as location_address,
+      l.building_specification,
+      l.category,
+      l.access_code,
+      c.name as company_name,
+      c.street as company_street,
+      c.house_number as company_house_number,
+      c.postal_code as company_postal_code,
+      c.city as company_city,
+      c.email as company_email,
+      vt.label as vehicle_label,
+      vt.max_length as vehicle_length,
+      ct.body_md as template_body
+    FROM bookings b
+    JOIN locations l ON b.location_id = l.id
+    LEFT JOIN companies c ON l.company_id = c.id
+    JOIN vehicle_types vt ON b.vehicle_type_id = vt.id
+    LEFT JOIN contract_templates ct ON b.template_id = ct.id
+    WHERE b.id = ?
+  `).get(bookingId);
+};
+
+const buildTemplateData = (booking) => {
+  const netPrice = booking.monthly_price;
+  const vatAmount = pricing.calculateVAT(netPrice);
+  const grossPrice = netPrice + vatAmount;
+  const categoryLabels = { outside: 'Außenstellplatz', covered: 'Überdacht', indoor: 'Halle' };
+
+  return {
+    company_name: booking.company_name,
+    company_street: booking.company_street,
+    company_house_number: booking.company_house_number,
+    company_postal_code: booking.company_postal_code,
+    company_city: booking.company_city,
+    company_email: booking.company_email || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
+    customer_first_name: booking.first_name,
+    customer_last_name: booking.last_name,
+    customer_address: booking.address,
+    customer_email: booking.email,
+    location_address: booking.location_address,
+    category_label: categoryLabels[booking.category],
+    vehicle_label: booking.vehicle_label,
+    vehicle_length: booking.vehicle_length,
+    access_code: booking.access_code || null,
+    start_date: new Date(booking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+    end_date: new Date(booking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+    net_price: netPrice.toFixed(2),
+    vat_amount: vatAmount.toFixed(2),
+    gross_price: grossPrice.toFixed(2),
+    prorata_amount: booking.prorata_amount ? (booking.prorata_amount + pricing.calculateVAT(booking.prorata_amount)).toFixed(2) : null,
+    discount_code: booking.discount_amount > 0 ? booking.discount_code : null,
+    discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
+    caution: booking.caution.toFixed(2),
+    contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+  };
+};
+
+const generateContractPDFBuffer = (bookingId) => {
+  return new Promise((resolve, reject) => {
+    const booking = getBookingForContract(bookingId);
+    if (!booking) return reject(new Error('Booking not found'));
+
+    const templateData = buildTemplateData(booking);
+    const renderedBody = pricing.renderTemplate(booking.template_body || '', templateData);
+
+    const doc = new PDFDocument({ bufferPages: true, margin: 50, size: 'A4' });
+    const chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve({ pdfBuffer: Buffer.concat(chunks), booking }));
+    doc.on('error', reject);
+
+    renderMarkdownToPDF(doc, renderedBody);
+    renderSignatures(doc, booking);
+    doc.end();
+  });
+};
+
+// ==================== PUBLIC API ====================
+
 // POST Create Booking
 app.post('/api/bookings', validators.createBooking, (req, res) => {
   try {
@@ -605,245 +789,15 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
 });
 
 // Download PDF Contract (same as before but with enhanced data)
-app.get('/api/contract/:bookingId', validators.bookingIdParam, (req, res) => {
+app.get('/api/contract/:bookingId', validators.bookingIdParam, async (req, res) => {
   try {
-    const booking = db.prepare(`
-      SELECT
-        b.*,
-        l.name as location_name,
-        l.address as location_address,
-        l.building_specification,
-        l.category,
-        l.access_code,
-        c.name as company_name,
-        c.street as company_street,
-        c.house_number as company_house_number,
-        c.postal_code as company_postal_code,
-        c.city as company_city,
-        c.email as company_email_address,
-        vt.label as vehicle_label,
-        vt.max_length as vehicle_length,
-        ct.body_md as template_body
-      FROM bookings b
-      JOIN locations l ON b.location_id = l.id
-      LEFT JOIN companies c ON l.company_id = c.id
-      JOIN vehicle_types vt ON b.vehicle_type_id = vt.id
-      LEFT JOIN contract_templates ct ON b.template_id = ct.id
-      WHERE b.id = ?
-    `).get(req.params.bookingId);
+    const { pdfBuffer, booking } = await generateContractPDFBuffer(req.params.bookingId);
 
-    if (!booking) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
+    auth.logAudit(db, 'system', 'pdf_generated', 'booking', booking.id, null, req.ip, req.get('user-agent'));
 
-    const netPrice = booking.monthly_price;
-    const vatAmount = pricing.calculateVAT(netPrice);
-    const grossPrice = netPrice + vatAmount;
-
-    const categoryLabels = {
-      'outside': 'Außenstellplatz',
-      'covered': 'Überdacht',
-      'indoor': 'Halle'
-    };
-
-    // Prepare template data (same as HTML preview)
-    const templateData = {
-      company_name: booking.company_name,
-      company_street: booking.company_street,
-      company_house_number: booking.company_house_number,
-      company_postal_code: booking.company_postal_code,
-      company_city: booking.company_city,
-      company_email: booking.company_email_address || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
-      customer_first_name: booking.first_name,
-      customer_last_name: booking.last_name,
-      customer_address: booking.address,
-      customer_email: booking.email,
-      location_address: booking.location_address,
-      category_label: categoryLabels[booking.category],
-      vehicle_label: booking.vehicle_label,
-      vehicle_length: booking.vehicle_length,
-      access_code: booking.access_code || null,
-      start_date: new Date(booking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
-      end_date: new Date(booking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
-      net_price: netPrice.toFixed(2),
-      vat_amount: vatAmount.toFixed(2),
-      gross_price: grossPrice.toFixed(2),
-      prorata_amount: booking.prorata_amount ? (booking.prorata_amount + pricing.calculateVAT(booking.prorata_amount)).toFixed(2) : null,
-      discount_code: booking.discount_amount > 0 ? booking.discount_code : null,
-      discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
-      caution: booking.caution.toFixed(2),
-      contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
-    };
-
-    // Render template from database
-    const renderedBody = pricing.renderTemplate(booking.template_body || '', templateData);
-
-    // Generate PDF
-    const doc = new PDFDocument({ bufferPages: true, margin: 50, size: 'A4' });
-    const stream = fs.createWriteStream(`./temp/contract_${booking.id}.pdf`);
-
-    doc.pipe(stream);
-
-    // Helper for SVG signature rendering
-    const renderSVGSignature = (doc, svgString, x, y, scale = 0.3) => {
-      if (!svgString) return;
-      try {
-        const pathMatches = svgString.matchAll(/<path d="([^"]+)"/g);
-        for (const match of pathMatches) {
-          const pathData = match[1];
-          const commands = pathData.split(/(?=[ML])/);
-          let firstPoint = true;
-          for (const cmd of commands) {
-            const type = cmd[0];
-            const coords = cmd.slice(1).trim().split(/\s+/).map(c => parseFloat(c));
-            if (type === 'M' && coords.length >= 2) {
-              doc.moveTo(x + coords[0] * scale, y + coords[1] * scale);
-              firstPoint = false;
-            } else if (type === 'L' && coords.length >= 2) {
-              doc.lineTo(x + coords[0] * scale, y + coords[1] * scale);
-            }
-          }
-          if (!firstPoint) {
-            doc.stroke();
-          }
-        }
-      } catch (error) {
-        console.error('Error rendering SVG signature:', error);
-      }
-    };
-
-    // Parse and render the markdown template content
-    const lines = renderedBody.split('\n');
-    let currentParagraph = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      if (!line) {
-        // Empty line - render accumulated paragraph
-        if (currentParagraph.length > 0) {
-          const paragraphText = currentParagraph.join(' ');
-          doc.fontSize(10).font('Helvetica').text(paragraphText, {
-            align: 'justify',
-            lineGap: 4
-          });
-          doc.moveDown(0.8);
-          currentParagraph = [];
-        }
-        continue;
-      }
-
-      // Handle markdown headers
-      if (line.startsWith('# ')) {
-        // Render any pending paragraph first
-        if (currentParagraph.length > 0) {
-          const paragraphText = currentParagraph.join(' ');
-          doc.fontSize(10).font('Helvetica').text(paragraphText, {
-            align: 'justify',
-            lineGap: 4
-          });
-          doc.moveDown(0.8);
-          currentParagraph = [];
-        }
-        doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), {
-          align: 'center',
-          lineGap: 5
-        });
-        doc.moveDown(1);
-      } else if (line.startsWith('## ')) {
-        // Render any pending paragraph first
-        if (currentParagraph.length > 0) {
-          const paragraphText = currentParagraph.join(' ');
-          doc.fontSize(10).font('Helvetica').text(paragraphText, {
-            align: 'justify',
-            lineGap: 4
-          });
-          doc.moveDown(0.8);
-          currentParagraph = [];
-        }
-        doc.moveDown(0.3);
-        doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3), {
-          lineGap: 4
-        });
-        doc.moveDown(0.5);
-      } else if (line.startsWith('### ')) {
-        // Render any pending paragraph first
-        if (currentParagraph.length > 0) {
-          const paragraphText = currentParagraph.join(' ');
-          doc.fontSize(10).font('Helvetica').text(paragraphText, {
-            align: 'justify',
-            lineGap: 4
-          });
-          doc.moveDown(0.8);
-          currentParagraph = [];
-        }
-        doc.fontSize(11).font('Helvetica-Bold').text(line.substring(4), {
-          lineGap: 4
-        });
-        doc.moveDown(0.4);
-      } else {
-        // Regular text - accumulate into paragraph
-        // Remove ** markers for bold (PDFKit doesn't support inline formatting easily)
-        const cleanLine = line.replace(/\*\*/g, '');
-        currentParagraph.push(cleanLine);
-      }
-    }
-
-    // Render any remaining paragraph
-    if (currentParagraph.length > 0) {
-      const paragraphText = currentParagraph.join(' ');
-      doc.fontSize(10).font('Helvetica').text(paragraphText, {
-        align: 'justify',
-        lineGap: 4
-      });
-      doc.moveDown(0.8);
-    }
-
-    // Signatures section
-    doc.moveDown(2);
-    doc.fontSize(11).font('Helvetica-Bold').text('Unterschriften');
-    doc.moveDown(0.5);
-
-    doc.fontSize(9).font('Helvetica').text('Mieter:');
-    const mieterSignY = doc.y;
-    if (booking.customer_signature_svg) {
-      renderSVGSignature(doc, booking.customer_signature_svg, 70, mieterSignY, 0.25);
-    }
-    doc.y = mieterSignY + 40;
-    doc.moveTo(70, doc.y).lineTo(270, doc.y).stroke();
-    if (booking.customer_signature_date) {
-      const sigDate = new Date(booking.customer_signature_date).toLocaleDateString('de-DE');
-      doc.text(`(${booking.first_name} ${booking.last_name}, ${sigDate})`, 70, doc.y + 3);
-    }
-    doc.moveDown(2);
-
-    doc.fontSize(9).font('Helvetica').text('Vermieter:');
-    const vermieterSignY = doc.y;
-    if (booking.owner_signature_svg) {
-      renderSVGSignature(doc, booking.owner_signature_svg, 70, vermieterSignY, 0.25);
-    }
-    doc.y = vermieterSignY + 40;
-    doc.moveTo(70, doc.y).lineTo(270, doc.y).stroke();
-    if (booking.owner_signature_date) {
-      const ownerSigDate = new Date(booking.owner_signature_date).toLocaleDateString('de-DE');
-      doc.text(`(${booking.company_name}, ${ownerSigDate})`, 70, doc.y + 3);
-    }
-
-    // Footer with terms hash
-    doc.moveDown(2);
-    doc.fontSize(7).fillColor('#666');
-    doc.text(`Contract ID: ${booking.id} | Template v${booking.template_version} | Terms: ${booking.terms_hash?.substring(0, 16)}... | Generated: ${new Date().toISOString()}`, {
-      align: 'center'
-    });
-
-    doc.end();
-
-    stream.on('finish', () => {
-      // Log audit
-      auth.logAudit(db, 'system', 'pdf_generated', 'booking', booking.id, null, req.ip, req.get('user-agent'));
-      res.download(`./temp/contract_${booking.id}.pdf`, `vertrag_${booking.id}.pdf`);
-    });
-
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="vertrag_${booking.id}.pdf"`);
+    res.send(pdfBuffer);
   } catch (error) {
     console.error('PDF Error:', error);
     res.status(500).json({ error: error.message });
@@ -1029,81 +983,9 @@ app.post('/api/admin/bookings/:bookingId/sign-owner', auth.requireAuth, validato
 
     // Send contract completion email with PDF (async, non-blocking)
     try {
-      const completedBooking = db.prepare(`
-        SELECT b.*, l.name as location_name, c.email as company_email,
-               vt.label as vehicle_label, ct.body_md as template_body
-        FROM bookings b
-        JOIN locations l ON b.location_id = l.id
-        LEFT JOIN companies c ON l.company_id = c.id
-        JOIN vehicle_types vt ON b.vehicle_type_id = vt.id
-        LEFT JOIN contract_templates ct ON b.template_id = ct.id
-        WHERE b.id = ?
-      `).get(bookingId);
-
-      if (completedBooking) {
-        // Generate PDF as buffer
-        const PDFDocEmail = require('pdfkit');
-        const netPrice = completedBooking.monthly_price;
-        const vatAmount = pricing.calculateVAT(netPrice);
-        const grossPrice = netPrice + vatAmount;
-        const categoryLabels = { outside: 'Außenstellplatz', covered: 'Überdacht', indoor: 'Halle' };
-
-        const templateData = {
-          company_name: completedBooking.company_name || '',
-          company_street: completedBooking.company_street || '',
-          company_house_number: completedBooking.company_house_number || '',
-          company_postal_code: completedBooking.company_postal_code || '',
-          company_city: completedBooking.company_city || '',
-          company_email: completedBooking.company_email || '',
-          customer_first_name: completedBooking.first_name,
-          customer_last_name: completedBooking.last_name,
-          customer_address: completedBooking.address,
-          customer_email: completedBooking.email,
-          location_address: completedBooking.location_name,
-          category_label: categoryLabels[completedBooking.category],
-          vehicle_label: completedBooking.vehicle_label,
-          access_code: completedBooking.access_code || null,
-          start_date: new Date(completedBooking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
-          end_date: new Date(completedBooking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
-          net_price: netPrice.toFixed(2),
-          vat_amount: vatAmount.toFixed(2),
-          gross_price: grossPrice.toFixed(2),
-          prorata_amount: completedBooking.prorata_amount ? (completedBooking.prorata_amount + pricing.calculateVAT(completedBooking.prorata_amount)).toFixed(2) : null,
-          discount_code: completedBooking.discount_amount > 0 ? completedBooking.discount_code : null,
-          discount_amount: completedBooking.discount_amount > 0 ? completedBooking.discount_amount.toFixed(2) : null,
-          caution: completedBooking.caution.toFixed(2),
-          contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
-        };
-
-        const renderedBody = pricing.renderTemplate(completedBooking.template_body || '', templateData);
-
-        // Build PDF into buffer
-        const doc = new PDFDocEmail({ bufferPages: true, margin: 50, size: 'A4' });
-        const chunks = [];
-        doc.on('data', chunk => chunks.push(chunk));
-        doc.on('end', () => {
-          const pdfBuffer = Buffer.concat(chunks);
-          mailer.sendContractCompleted(completedBooking, pdfBuffer, completedBooking.company_email);
-        });
-
-        // Render markdown to PDF (simplified)
-        const lines = renderedBody.split('\n');
-        for (const rawLine of lines) {
-          const line = rawLine.trim();
-          if (!line) { doc.moveDown(0.5); continue; }
-          if (line.startsWith('# ')) {
-            doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), { align: 'center' });
-            doc.moveDown(0.8);
-          } else if (line.startsWith('## ')) {
-            doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3));
-            doc.moveDown(0.4);
-          } else {
-            doc.fontSize(10).font('Helvetica').text(line.replace(/\*\*/g, ''), { align: 'justify', lineGap: 3 });
-            doc.moveDown(0.3);
-          }
-        }
-        doc.end();
-      }
+      generateContractPDFBuffer(bookingId).then(({ pdfBuffer, booking: completedBooking }) => {
+        mailer.sendContractCompleted(completedBooking, pdfBuffer, completedBooking.company_email);
+      }).catch(err => console.error('Error generating email PDF:', err));
     } catch (emailError) {
       console.error('Error sending contract email:', emailError);
     }
