@@ -240,6 +240,9 @@ const renderTemplate = (template, data) => {
     return !data[variable] ? content : '';
   });
 
+  // Collapse multiple consecutive blank lines into a single blank line
+  rendered = rendered.replace(/\n{3,}/g, '\n\n');
+
   return rendered;
 };
 
