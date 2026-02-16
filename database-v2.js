@@ -323,9 +323,9 @@ Die Kündigung bedarf der Textform; die Übermittlung per E-Mail ist ausreichend
 (3) Rabatt (Code: {{discount_code}}): -€ {{discount_amount}}
 {{/if}}
 
-(4) Fälligkeit: monatlich zum 1. des Monats (Vorkasse).
+(2) Fälligkeit: monatlich zum 1. des Monats (Vorkasse).
 
-(5) Kaution: € {{caution}}, zahlbar vor Übergabe.
+(3) Kaution: € {{caution}}, zahlbar vor Übergabe.
 
 ## §4 Nutzungsvorgaben / Hausordnung
 
