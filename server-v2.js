@@ -378,6 +378,7 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
         l.address as location_address,
         l.building_specification,
         l.category as location_category,
+        l.access_code,
         c.name as company_name,
         c.street as company_street,
         c.house_number as company_house_number,
@@ -386,6 +387,7 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
         c.tax_number as company_tax_number,
         c.vat_id as company_vat_id,
         c.bank_account as company_bank_account,
+        c.email as company_email_address,
         vt.label as vehicle_label,
         vt.max_length as vehicle_length,
         ct.name as template_name,
@@ -419,7 +421,7 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
       company_house_number: booking.company_house_number,
       company_postal_code: booking.company_postal_code,
       company_city: booking.company_city,
-      company_email: booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
+      company_email: booking.company_email_address || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
       customer_first_name: booking.first_name,
       customer_last_name: booking.last_name,
       customer_address: booking.address,
@@ -428,14 +430,15 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
       category_label: categoryLabels[booking.category],
       vehicle_label: booking.vehicle_label,
       vehicle_length: booking.vehicle_length,
+      access_code: booking.access_code || null,
       start_date: new Date(booking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
       end_date: new Date(booking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
       net_price: netPrice.toFixed(2),
       vat_amount: vatAmount.toFixed(2),
       gross_price: grossPrice.toFixed(2),
       prorata_amount: booking.prorata_amount ? (booking.prorata_amount + pricing.calculateVAT(booking.prorata_amount)).toFixed(2) : null,
-      discount_code: booking.discount_code,
-      discount_amount: booking.discount_amount?.toFixed(2),
+      discount_code: booking.discount_amount > 0 ? booking.discount_code : null,
+      discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
       caution: booking.caution.toFixed(2),
       contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
       customer_signature: booking.customer_signature_svg || '(Nicht unterschrieben)',
@@ -583,11 +586,13 @@ app.get('/api/contract/:bookingId', validators.bookingIdParam, (req, res) => {
         l.address as location_address,
         l.building_specification,
         l.category,
+        l.access_code,
         c.name as company_name,
         c.street as company_street,
         c.house_number as company_house_number,
         c.postal_code as company_postal_code,
         c.city as company_city,
+        c.email as company_email_address,
         vt.label as vehicle_label,
         vt.max_length as vehicle_length,
         ct.body_md as template_body
@@ -620,7 +625,7 @@ app.get('/api/contract/:bookingId', validators.bookingIdParam, (req, res) => {
       company_house_number: booking.company_house_number,
       company_postal_code: booking.company_postal_code,
       company_city: booking.company_city,
-      company_email: booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
+      company_email: booking.company_email_address || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
       customer_first_name: booking.first_name,
       customer_last_name: booking.last_name,
       customer_address: booking.address,
@@ -629,14 +634,15 @@ app.get('/api/contract/:bookingId', validators.bookingIdParam, (req, res) => {
       category_label: categoryLabels[booking.category],
       vehicle_label: booking.vehicle_label,
       vehicle_length: booking.vehicle_length,
+      access_code: booking.access_code || null,
       start_date: new Date(booking.start_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
       end_date: new Date(booking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
       net_price: netPrice.toFixed(2),
       vat_amount: vatAmount.toFixed(2),
       gross_price: grossPrice.toFixed(2),
       prorata_amount: booking.prorata_amount ? (booking.prorata_amount + pricing.calculateVAT(booking.prorata_amount)).toFixed(2) : null,
-      discount_code: booking.discount_code,
-      discount_amount: booking.discount_amount?.toFixed(2),
+      discount_code: booking.discount_amount > 0 ? booking.discount_code : null,
+      discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
       caution: booking.caution.toFixed(2),
       contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
     };
@@ -1022,12 +1028,12 @@ app.get('/api/admin/companies/:id', auth.requireAuth, validators.idParam, (req, 
 
 app.post('/api/admin/companies', auth.requireAuth, validators.createCompany, (req, res) => {
   try {
-    const { name, street, house_number, postal_code, city, tax_number, vat_id, bank_account } = req.body;
+    const { name, street, house_number, postal_code, city, tax_number, vat_id, bank_account, email } = req.body;
 
     const result = db.prepare(`
-      INSERT INTO companies (name, street, house_number, postal_code, city, tax_number, vat_id, bank_account)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(name, street, house_number, postal_code, city, tax_number || '', vat_id || '', bank_account || '');
+      INSERT INTO companies (name, street, house_number, postal_code, city, tax_number, vat_id, bank_account, email)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(name, street, house_number, postal_code, city, tax_number || '', vat_id || '', bank_account || '', email || null);
 
     auth.logAudit(db, req.user.role, 'company_created', 'company', result.lastInsertRowid, { name }, req.ip, req.get('user-agent'));
 
@@ -1043,14 +1049,14 @@ app.post('/api/admin/companies', auth.requireAuth, validators.createCompany, (re
 
 app.put('/api/admin/companies/:id', auth.requireAuth, validators.idParam, validators.createCompany, (req, res) => {
   try {
-    const { name, street, house_number, postal_code, city, tax_number, vat_id, bank_account } = req.body;
+    const { name, street, house_number, postal_code, city, tax_number, vat_id, bank_account, email } = req.body;
 
     const result = db.prepare(`
       UPDATE companies
       SET name = ?, street = ?, house_number = ?, postal_code = ?, city = ?,
-          tax_number = ?, vat_id = ?, bank_account = ?
+          tax_number = ?, vat_id = ?, bank_account = ?, email = ?
       WHERE id = ?
-    `).run(name, street, house_number, postal_code, city, tax_number || '', vat_id || '', bank_account || '', req.params.id);
+    `).run(name, street, house_number, postal_code, city, tax_number || '', vat_id || '', bank_account || '', email || null, req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Company not found' });
@@ -1116,12 +1122,12 @@ app.get('/api/admin/locations/:id', auth.requireAuth, validators.idParam, (req, 
 
 app.post('/api/admin/locations', auth.requireAuth, validators.createLocation, (req, res) => {
   try {
-    const { name, address, building_specification, category, company_id } = req.body;
+    const { name, address, building_specification, category, company_id, access_code } = req.body;
 
     const result = db.prepare(`
-      INSERT INTO locations (name, address, building_specification, category, company_id)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(name, address, building_specification || '', category, company_id || null);
+      INSERT INTO locations (name, address, building_specification, category, company_id, access_code)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(name, address, building_specification || '', category, company_id || null, access_code || null);
 
     auth.logAudit(db, req.user.role, 'location_created', 'location', result.lastInsertRowid, { name }, req.ip, req.get('user-agent'));
 
@@ -1133,13 +1139,13 @@ app.post('/api/admin/locations', auth.requireAuth, validators.createLocation, (r
 
 app.put('/api/admin/locations/:id', auth.requireAuth, validators.idParam, validators.createLocation, (req, res) => {
   try {
-    const { name, address, building_specification, category, company_id } = req.body;
+    const { name, address, building_specification, category, company_id, access_code } = req.body;
 
     const result = db.prepare(`
       UPDATE locations
-      SET name = ?, address = ?, building_specification = ?, category = ?, company_id = ?
+      SET name = ?, address = ?, building_specification = ?, category = ?, company_id = ?, access_code = ?
       WHERE id = ?
-    `).run(name, address, building_specification || '', category, company_id || null, req.params.id);
+    `).run(name, address, building_specification || '', category, company_id || null, access_code || null, req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Location not found' });
@@ -1169,51 +1175,55 @@ app.delete('/api/admin/locations/:id', auth.requireAuth, validators.idParam, (re
   }
 });
 
-// ==================== PRICING RULES ====================
+// ==================== PRICING (Formula-based) ====================
 
-app.get('/api/admin/pricing/rules', auth.requireAuth, (req, res) => {
+// GET current base price and full price table
+app.get('/api/admin/pricing/config', auth.requireAuth, (req, res) => {
   try {
-    const rules = db.prepare(`
-      SELECT pr.*, l.name as location_name, vt.label as vehicle_label
-      FROM pricing_rules pr
-      JOIN locations l ON pr.location_id = l.id
-      JOIN vehicle_types vt ON pr.vehicle_type_id = vt.id
-      ORDER BY pr.priority DESC, pr.created_at DESC
-    `).all();
-    res.json(rules);
+    const basePrice = pricing.getBasePrice(db);
+    const vehicleTypes = db.prepare('SELECT * FROM vehicle_types ORDER BY max_length').all();
+    const categories = ['indoor', 'covered', 'outside'];
+
+    const priceTable = [];
+    vehicleTypes.forEach(vt => {
+      const row = {
+        vehicle_type_id: vt.id,
+        vehicle_label: vt.label,
+        max_length: vt.max_length
+      };
+      categories.forEach(cat => {
+        row[cat] = pricing.calculateFormulaPrice(basePrice, vt.max_length, cat);
+      });
+      priceTable.push(row);
+    });
+
+    res.json({
+      base_price: basePrice,
+      category_factors: pricing.CATEGORY_FACTORS,
+      length_threshold: pricing.LENGTH_THRESHOLD,
+      length_step: pricing.LENGTH_STEP,
+      surcharge_per_step: pricing.SURCHARGE_PER_STEP,
+      price_table: priceTable
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/admin/pricing/rules', auth.requireAuth, validators.createPricingRule, (req, res) => {
+// PUT update base price
+app.put('/api/admin/pricing/config', auth.requireAuth, (req, res) => {
   try {
-    const { location_id, vehicle_type_id, category, base_price, valid_from, valid_to, priority } = req.body;
+    const { base_price } = req.body;
 
-    const result = db.prepare(`
-      INSERT INTO pricing_rules (location_id, vehicle_type_id, category, base_price, valid_from, valid_to, priority)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(location_id, vehicle_type_id, category, base_price, valid_from || null, valid_to || null, priority || 0);
-
-    auth.logAudit(db, req.user.role, 'pricing_rule_created', 'pricing_rule', result.lastInsertRowid, { base_price }, req.ip, req.get('user-agent'));
-
-    res.json({ success: true, id: result.lastInsertRowid });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/admin/pricing/rules/:id', auth.requireAuth, validators.idParam, (req, res) => {
-  try {
-    const result = db.prepare('DELETE FROM pricing_rules WHERE id = ?').run(req.params.id);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Pricing rule not found' });
+    if (base_price == null || isNaN(base_price) || base_price < 0) {
+      return res.status(400).json({ error: 'Valid base_price required (>= 0)' });
     }
 
-    auth.logAudit(db, req.user.role, 'pricing_rule_deleted', 'pricing_rule', req.params.id, null, req.ip, req.get('user-agent'));
+    db.prepare("UPDATE settings SET value = ?, updated_at = datetime('now') WHERE key = 'base_price'").run(String(base_price));
 
-    res.json({ success: true });
+    auth.logAudit(db, req.user.role, 'base_price_updated', 'settings', null, { base_price }, req.ip, req.get('user-agent'));
+
+    res.json({ success: true, base_price: parseFloat(base_price) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1470,7 +1480,7 @@ app.post('/api/admin/invite-tokens', auth.requireAuth, validators.createInviteTo
 
     // Generate invite URL
     const baseUrl = req.protocol + '://' + req.get('host');
-    const inviteUrl = `${baseUrl}/booking.html?invite=${token}`;
+    const inviteUrl = `${baseUrl}/booking?invite=${token}`;
 
     res.json({ success: true, id: result.lastInsertRowid, token, inviteUrl, expiresAt });
   } catch (error) {

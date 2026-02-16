@@ -26,14 +26,22 @@ const state = {
 let canvas, ctx;
 let isDrawing = false;
 
+// Track if location was pre-selected via deeplink
+let locationLocked = false;
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check for invite token
     const urlParams = new URLSearchParams(window.location.search);
     const inviteToken = urlParams.get('invite');
+    const locationParam = urlParams.get('location');
 
     if (inviteToken) {
         await loadInviteData(inviteToken);
+    }
+
+    if (locationParam) {
+        state.selectedLocation = parseInt(locationParam);
+        locationLocked = true;
     }
 
     await loadLocations();
@@ -41,9 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeSignatureCanvas();
     attachEventListeners();
 
-    // Set minimum date to today
+    // Set minimum end date to today
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('startDate').min = today;
     document.getElementById('endDate').min = today;
 });
 
@@ -88,10 +95,15 @@ async function loadLocations() {
             select.appendChild(option);
         });
 
-        // Pre-select if from invite
+        // Pre-select if from invite or location deeplink
         if (state.selectedLocation) {
             select.value = state.selectedLocation;
             select.dispatchEvent(new Event('change'));
+
+            if (locationLocked) {
+                select.disabled = true;
+                select.style.opacity = '0.7';
+            }
         }
     } catch (error) {
         console.error('Error loading locations:', error);

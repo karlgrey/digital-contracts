@@ -202,6 +202,13 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- Settings (key-value store for global config)
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Indexes
   CREATE INDEX IF NOT EXISTS idx_bookings_location ON bookings(location_id);
   CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
@@ -282,7 +289,7 @@ const ensureDefaultTemplate = () => {
 {{company_name}}
 {{company_street}} {{company_house_number}}
 {{company_postal_code}} {{company_city}}
-E-Mail: info@{{company_email}}
+E-Mail: {{company_email}}
 
 **Mieter:**
 {{customer_first_name}} {{customer_last_name}}
@@ -293,7 +300,7 @@ E-Mail: {{customer_email}}
 
 (1) Vermietet wird ein Stellplatz am Standort {{location_address}}, {{category_label}} (nachfolgend „Stellplatz").
 
-(2) Der Stellplatz dient ausschließlich zum Abstellen des folgenden Fahrzeugs/Bootes: {{vehicle_label}}, Maße (L×B×H): bis {{vehicle_length}}m Länge.
+(2) Der Stellplatz dient ausschließlich zum Abstellen des folgenden Fahrzeugs/Bootes: {{vehicle_label}}.
 
 ## §2 Mietzeit / Kündigung
 
@@ -325,7 +332,12 @@ E-Mail: {{customer_email}}
 
 ## §5 Zugang / Schlüsseltresor
 
+{{#if access_code}}
+(1) Zugang erfolgt über Schlüsseltresor, Code: {{access_code}}. Der Code ist vertraulich zu behandeln.
+{{/if}}
+{{#unless access_code}}
 (1) Zugang erfolgt über Schlüsseltresor, Code wird separat mitgeteilt. Der Code ist vertraulich zu behandeln.
+{{/unless}}
 
 (2) Verlust/Missbrauch führt zu Kostenersatz (Schließung/Neucodierung).
 
@@ -388,8 +400,52 @@ Vermieter: {{owner_signature}}
   }
 };
 
+// Migration: Add access_code to locations table
+const migrateLocationsAccessCode = () => {
+  try {
+    const columns = db.prepare("PRAGMA table_info(locations)").all();
+    const columnNames = columns.map(c => c.name);
+    if (!columnNames.includes('access_code')) {
+      db.prepare('ALTER TABLE locations ADD COLUMN access_code TEXT').run();
+      console.log('✓ Added column: access_code to locations');
+    }
+  } catch (error) {
+    if (!error.message.includes('duplicate column name')) {
+      console.error('Migration error (locations.access_code):', error.message);
+    }
+  }
+};
+
+// Migration: Add email to companies table
+const migrateCompaniesEmail = () => {
+  try {
+    const columns = db.prepare("PRAGMA table_info(companies)").all();
+    const columnNames = columns.map(c => c.name);
+    if (!columnNames.includes('email')) {
+      db.prepare('ALTER TABLE companies ADD COLUMN email TEXT').run();
+      console.log('✓ Added column: email to companies');
+    }
+  } catch (error) {
+    if (!error.message.includes('duplicate column name')) {
+      console.error('Migration error (companies.email):', error.message);
+    }
+  }
+};
+
+// Ensure default base price setting exists
+const ensureDefaultSettings = () => {
+  const existing = db.prepare("SELECT key FROM settings WHERE key = 'base_price'").get();
+  if (!existing) {
+    db.prepare("INSERT INTO settings (key, value) VALUES ('base_price', '100')").run();
+    console.log('✓ Default base_price setting created (100€)');
+  }
+};
+
 // Run migrations
 checkAndMigrateBookings();
+migrateLocationsAccessCode();
+migrateCompaniesEmail();
+ensureDefaultSettings();
 ensureDefaultTemplate();
 
 console.log('✓ Database v2 initialized with WAL mode');

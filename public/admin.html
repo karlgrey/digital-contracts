@@ -430,7 +430,7 @@
         <header>
             <h1>Stellplatz Admin Panel</h1>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="/booking.html" target="_blank" class="logout-btn" style="background: #28a745; text-decoration: none; display: inline-block;">Zum Buchungsformular</a>
+                <a href="/booking" target="_blank" class="logout-btn" style="background: #28a745; text-decoration: none; display: inline-block;">Zum Buchungsformular</a>
                 <a href="/" target="_blank" class="logout-btn" style="background: #17a2b8; text-decoration: none; display: inline-block;">Zur Homepage</a>
                 <button class="logout-btn" onclick="logoutAdmin()">Abmelden</button>
             </div>
@@ -442,6 +442,7 @@
                 <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
                 <button class="tab" onclick="switchTab('companies')">Firmen</button>
                 <button class="tab" onclick="switchTab('locations')">Standorte</button>
+                <button class="tab" onclick="switchTab('pricing')">Preise</button>
             </div>
 
             <!-- Dashboard Tab -->
@@ -511,8 +512,46 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Pricing Tab -->
+            <div id="pricing-tab" class="tab-content">
+                <div class="bookings-section" style="margin-bottom: 20px;">
+                    <h2>Grundpreis</h2>
+                    <p style="color: #666; margin-bottom: 15px;">Grundpreis (Netto/Monat) für Halle bis 5m. Alle anderen Preise werden automatisch berechnet.</p>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="form-group" style="margin: 0; flex: 0 0 200px;">
+                            <input type="number" id="basePriceInput" step="0.01" min="0" style="font-size: 18px; font-weight: bold;">
+                        </div>
+                        <span style="font-size: 18px; color: #666;">€ Netto</span>
+                        <button class="btn-primary" onclick="saveBasePrice()" style="flex: 0 0 auto; padding: 12px 24px;">Speichern</button>
+                        <span id="basePriceMessage" style="font-size: 14px;"></span>
+                    </div>
+                    <p style="color: #999; font-size: 12px; margin-top: 10px;">
+                        Formel: (Grundpreis + Längenzuschlag) × Kategoriefaktor<br>
+                        Längenzuschlag: ab 5m +10€ pro 0,5m | Faktoren: Halle ×1,0 / Überdacht ×0,75 / Außen ×0,50
+                    </p>
+                </div>
+                <div class="bookings-section">
+                    <h2>Preisübersicht (alle Preise Netto/Monat)</h2>
+                    <table id="pricingTable">
+                        <thead>
+                            <tr>
+                                <th>Fahrzeugtyp</th>
+                                <th>Max. Länge</th>
+                                <th>Halle</th>
+                                <th>Überdacht</th>
+                                <th>Außenstellplatz</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingBody">
+                            <tr><td colspan="5">Laden...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
+
 
     <!-- Signature Modal -->
     <div id="signatureModal" class="modal">
@@ -564,6 +603,10 @@
                     <input type="text" id="companyVatId" placeholder="z.B. DE123456789">
                 </div>
                 <div class="form-group">
+                    <label for="companyEmail">E-Mail (Absender im Vertrag)</label>
+                    <input type="email" id="companyEmail" placeholder="z.B. info@meinefirma.de">
+                </div>
+                <div class="form-group">
                     <label for="companyBankAccount">Kontoinformationen</label>
                     <textarea id="companyBankAccount" placeholder="IBAN: ...\nBIC: ..."></textarea>
                 </div>
@@ -607,6 +650,10 @@
                     <select id="locationCompany">
                         <option value="">Keine Firma zugeordnet</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="locationAccessCode">Zugangscode (Schlüsseltresor)</label>
+                    <input type="text" id="locationAccessCode" placeholder="z.B. 1234#">
                 </div>
                 <div id="locationFormMessage"></div>
                 <div class="modal-buttons">
@@ -669,6 +716,8 @@
                 loadCompanies();
             } else if (tabName === 'locations') {
                 loadLocations();
+            } else if (tabName === 'pricing') {
+                loadPricingRules();
             }
         }
 
@@ -972,6 +1021,7 @@
                 document.getElementById('companyCity').value = company.city;
                 document.getElementById('companyTaxNumber').value = company.tax_number || '';
                 document.getElementById('companyVatId').value = company.vat_id || '';
+                document.getElementById('companyEmail').value = company.email || '';
                 document.getElementById('companyBankAccount').value = company.bank_account || '';
             } catch (error) {
                 console.error('Error loading company:', error);
@@ -1012,6 +1062,7 @@
                 city: document.getElementById('companyCity').value,
                 tax_number: document.getElementById('companyTaxNumber').value,
                 vat_id: document.getElementById('companyVatId').value,
+                email: document.getElementById('companyEmail').value,
                 bank_account: document.getElementById('companyBankAccount').value
             };
 
@@ -1162,6 +1213,7 @@
                 document.getElementById('locationAddress').value = location.address;
                 document.getElementById('locationBuilding').value = location.building_specification || '';
                 document.getElementById('locationCategory').value = location.category || '';
+                document.getElementById('locationAccessCode').value = location.access_code || '';
 
                 setTimeout(() => {
                     document.getElementById('locationCompany').value = location.company_id || '';
@@ -1195,7 +1247,7 @@
         }
 
         function copyBookingLink(locationId) {
-            const bookingUrl = `${window.location.origin}/booking.html?location=${locationId}`;
+            const bookingUrl = `${window.location.origin}/booking?location=${locationId}`;
 
             navigator.clipboard.writeText(bookingUrl).then(() => {
                 alert(`Booking-Link kopiert!\n\n${bookingUrl}\n\nSie können diesen Link an Kunden senden. Der Standort ist vorausgewählt und kann vom Kunden nicht geändert werden.`);
@@ -1226,7 +1278,8 @@
                 address: document.getElementById('locationAddress').value,
                 building_specification: document.getElementById('locationBuilding').value,
                 category: document.getElementById('locationCategory').value,
-                company_id: document.getElementById('locationCompany').value || null
+                company_id: document.getElementById('locationCompany').value || null,
+                access_code: document.getElementById('locationAccessCode').value || null
             };
 
             try {
@@ -1265,6 +1318,82 @@
             const messageEl = document.getElementById('locationFormMessage');
             messageEl.textContent = message;
             messageEl.className = type;
+        }
+
+        // ==================== PRICING (Formula-based) ====================
+
+        async function loadPricingRules() {
+            try {
+                const response = await fetch('/api/admin/pricing/config', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load pricing config');
+
+                const config = await response.json();
+
+                // Set base price input
+                document.getElementById('basePriceInput').value = config.base_price.toFixed(2);
+
+                // Build price table
+                const tbody = document.getElementById('pricingBody');
+
+                if (config.price_table.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">Keine Fahrzeugtypen vorhanden</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = config.price_table.map(row => `
+                    <tr>
+                        <td>${row.vehicle_label}</td>
+                        <td>${row.max_length}m</td>
+                        <td><strong>${row.indoor.toFixed(2)} €</strong></td>
+                        <td>${row.covered.toFixed(2)} €</td>
+                        <td>${row.outside.toFixed(2)} €</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading pricing config:', error);
+                document.getElementById('pricingBody').innerHTML =
+                    '<tr><td colspan="5">Fehler beim Laden</td></tr>';
+            }
+        }
+
+        async function saveBasePrice() {
+            const value = parseFloat(document.getElementById('basePriceInput').value);
+            if (isNaN(value) || value < 0) {
+                showBasePriceMessage('Ungültiger Preis', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/pricing/config', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ base_price: value })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to save');
+                }
+
+                showBasePriceMessage('Gespeichert!', 'success');
+                loadPricingRules(); // Refresh price table
+                setTimeout(() => showBasePriceMessage('', ''), 3000);
+            } catch (error) {
+                console.error('Error saving base price:', error);
+                showBasePriceMessage(error.message, 'error');
+            }
+        }
+
+        function showBasePriceMessage(message, type) {
+            const el = document.getElementById('basePriceMessage');
+            el.textContent = message;
+            el.style.color = type === 'error' ? '#dc3545' : '#28a745';
         }
     </script>
 </body>

@@ -49,6 +49,7 @@ const validators = {
     body('tax_number').optional().trim().isLength({ max: 50 }),
     body('vat_id').optional().trim().isLength({ max: 50 }),
     body('bank_account').optional().trim().isLength({ max: 500 }),
+    body('email').optional().trim().isLength({ max: 200 }),
     handleValidationErrors
   ],
 
@@ -59,6 +60,7 @@ const validators = {
     body('building_specification').optional().trim().isLength({ max: 500 }),
     body('category').isIn(['outside', 'covered', 'indoor']).withMessage('Category must be outside, covered, or indoor'),
     body('company_id').optional().isInt({ min: 1 }).withMessage('Valid company ID required'),
+    body('access_code').optional().trim().isLength({ max: 100 }),
     handleValidationErrors
   ],
 

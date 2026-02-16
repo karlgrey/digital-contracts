@@ -2,86 +2,48 @@ const crypto = require('crypto');
 
 /**
  * Pricing Resolution Logic
- * Priority: Overrides > Rules (by priority, then most recent)
+ * Formula: (base_price + length_surcharge) * category_factor
+ * - base_price: from settings table (default 100€ netto, for Halle up to 5m)
+ * - length_surcharge: >5m → +10€ per 0.5m step
+ * - category_factor: indoor=1.0, covered=0.75, outside=0.50
  */
-const resolvePrice = (db, locationId, vehicleTypeId, category, atDate) => {
-  // Ensure date is a string in YYYY-MM-DD format
-  let date;
-  if (!atDate) {
-    date = new Date().toISOString().split('T')[0];
-  } else if (atDate instanceof Date) {
-    date = atDate.toISOString().split('T')[0];
-  } else {
-    date = String(atDate);
+const CATEGORY_FACTORS = { outside: 0.50, covered: 0.75, indoor: 1.0 };
+const LENGTH_THRESHOLD = 5.0;
+const LENGTH_STEP = 0.5;
+const SURCHARGE_PER_STEP = 10;
+
+const getBasePrice = (db) => {
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'base_price'").get();
+  return row ? parseFloat(row.value) : 100;
+};
+
+const calculateFormulaPrice = (basePrice, maxLength, category) => {
+  let surcharge = 0;
+  if (maxLength > LENGTH_THRESHOLD) {
+    const steps = Math.ceil((maxLength - LENGTH_THRESHOLD) / LENGTH_STEP);
+    surcharge = steps * SURCHARGE_PER_STEP;
   }
+  const factor = CATEGORY_FACTORS[category] || 1.0;
+  return Math.round((basePrice + surcharge) * factor * 100) / 100;
+};
 
-  // Ensure locationId and vehicleTypeId are numbers
-  const locId = parseInt(locationId);
+const resolvePrice = (db, locationId, vehicleTypeId, category, atDate) => {
   const vehId = parseInt(vehicleTypeId);
-
-  // Ensure category is a string
   const cat = String(category);
 
-  // 1. Check for pricing override first
-  const override = db.prepare(`
-    SELECT override_price
-    FROM pricing_overrides
-    WHERE location_id = ?
-      AND vehicle_type_id = ?
-      AND category = ?
-      AND valid_from <= ?
-      AND valid_to >= ?
-    ORDER BY created_at DESC
-    LIMIT 1
-  `).get(locId, vehId, cat, date, date);
-
-  if (override) {
-    return {
-      price: override.override_price,
-      source: 'override'
-    };
+  // Get vehicle type max_length
+  const vehicleType = db.prepare('SELECT max_length FROM vehicle_types WHERE id = ?').get(vehId);
+  if (!vehicleType) {
+    throw new Error('NO_PRICE_RULE');
   }
 
-  // 2. Check for pricing rule
-  const rule = db.prepare(`
-    SELECT base_price
-    FROM pricing_rules
-    WHERE location_id = ?
-      AND vehicle_type_id = ?
-      AND category = ?
-      AND (valid_from IS NULL OR valid_from <= ?)
-      AND (valid_to IS NULL OR valid_to >= ?)
-    ORDER BY priority DESC, created_at DESC
-    LIMIT 1
-  `).get(locId, vehId, cat, date, date);
+  const basePrice = getBasePrice(db);
+  const price = calculateFormulaPrice(basePrice, vehicleType.max_length, cat);
 
-  if (rule) {
-    return {
-      price: rule.base_price,
-      source: 'rule'
-    };
-  }
-
-  // 3. Fallback to legacy pricing table (for backwards compatibility)
-  const legacyPrice = db.prepare(`
-    SELECT price_per_month
-    FROM pricing
-    WHERE location_id = ?
-      AND vehicle_type_id = ?
-    LIMIT 1
-  `).get(locId, vehId);
-
-  if (legacyPrice) {
-    // Apply category multiplier
-    const multipliers = { outside: 0.50, covered: 0.75, indoor: 1.0 };
-    return {
-      price: legacyPrice.price_per_month * (multipliers[cat] || 1.0),
-      source: 'legacy'
-    };
-  }
-
-  // No price found
-  throw new Error('NO_PRICE_RULE');
+  return {
+    price,
+    source: 'formula'
+  };
 };
 
 /**
@@ -273,6 +235,11 @@ const renderTemplate = (template, data) => {
     return data[variable] ? content : '';
   });
 
+  // Handle {{#unless variable}}...{{/unless}}
+  rendered = rendered.replace(/{{#unless\s+(\w+)}}(.*?){{\/unless}}/gs, (match, variable, content) => {
+    return !data[variable] ? content : '';
+  });
+
   return rendered;
 };
 
@@ -343,6 +310,12 @@ const validateSignature = (signatureSVG) => {
 
 module.exports = {
   resolvePrice,
+  getBasePrice,
+  calculateFormulaPrice,
+  CATEGORY_FACTORS,
+  LENGTH_THRESHOLD,
+  LENGTH_STEP,
+  SURCHARGE_PER_STEP,
   calculateProRata,
   applyDiscount,
   incrementDiscountUsage,
