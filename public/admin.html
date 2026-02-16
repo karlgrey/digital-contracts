@@ -790,7 +790,7 @@
                         <td>#${booking.id}</td>
                         <td>${booking.first_name} ${booking.last_name}</td>
                         <td>${booking.location_name}</td>
-                        <td>${booking.vehicle_length}m</td>
+                        <td>${booking.vehicle_label || '-'}</td>
                         <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
                         <td>
                             ${booking.status === 'pending_owner_signature' ? `
