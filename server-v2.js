@@ -236,38 +236,33 @@ const renderSVGSignature = (doc, svgString, x, y, scale = 0.25) => {
 
 const renderMarkdownToPDF = (doc, renderedBody) => {
   const lines = renderedBody.split('\n');
-  let currentParagraph = [];
 
-  const flushParagraph = () => {
-    if (currentParagraph.length > 0) {
-      const paragraphText = currentParagraph.join(' ');
-      doc.fontSize(10).font('Helvetica').text(paragraphText, { align: 'justify', lineGap: 4 });
-      doc.moveDown(0.8);
-      currentParagraph = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      // Empty line = paragraph break
+      doc.moveDown(0.6);
+      continue;
     }
-  };
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) { flushParagraph(); continue; }
     if (line.startsWith('# ')) {
-      flushParagraph();
       doc.fontSize(18).font('Helvetica-Bold').text(line.substring(2), { align: 'center', lineGap: 5 });
       doc.moveDown(1);
     } else if (line.startsWith('### ')) {
-      flushParagraph();
       doc.fontSize(11).font('Helvetica-Bold').text(line.substring(4), { lineGap: 4 });
       doc.moveDown(0.4);
     } else if (line.startsWith('## ')) {
-      flushParagraph();
       doc.moveDown(0.3);
       doc.fontSize(13).font('Helvetica-Bold').text(line.substring(3), { lineGap: 4 });
       doc.moveDown(0.5);
     } else {
-      currentParagraph.push(line.replace(/\*\*/g, ''));
+      // Handle bold markers: render **text** in bold
+      const cleanLine = line.replace(/\*\*/g, '');
+      const isBold = line.startsWith('**') && line.endsWith('**');
+      doc.fontSize(10).font(isBold ? 'Helvetica-Bold' : 'Helvetica').text(cleanLine, { lineGap: 2 });
     }
   }
-  flushParagraph();
 };
 
 const renderSignatures = (doc, booking) => {
