@@ -14,7 +14,7 @@ const db = require('./database-v2');
 const auth = require('./auth');
 const validators = require('./validation');
 const pricing = require('./pricing');
-const email = require('./email');
+const mailer = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -377,14 +377,14 @@ app.post('/api/bookings', validators.createBooking, (req, res) => {
       caution: deposit
     };
 
-    email.sendBookingConfirmation(bookingData);
+    mailer.sendBookingConfirmation(bookingData);
 
     // Get company email for admin notification
     const company = location.company_id
       ? db.prepare('SELECT email FROM companies WHERE id = ?').get(location.company_id)
       : null;
     if (company?.email) {
-      email.sendAdminNotification(bookingData, company.email);
+      mailer.sendAdminNotification(bookingData, company.email);
     }
   } catch (error) {
     console.error('Booking error:', error);
@@ -1083,7 +1083,7 @@ app.post('/api/admin/bookings/:bookingId/sign-owner', auth.requireAuth, validato
         doc.on('data', chunk => chunks.push(chunk));
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
-          email.sendContractCompleted(completedBooking, pdfBuffer, completedBooking.company_email);
+          mailer.sendContractCompleted(completedBooking, pdfBuffer, completedBooking.company_email);
         });
 
         // Render markdown to PDF (simplified)
