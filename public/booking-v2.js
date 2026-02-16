@@ -158,7 +158,7 @@ function lockCategory(category) {
         } else {
             btn.classList.remove('active');
             btn.disabled = true;
-            btn.style.opacity = '0.6';
+            btn.style.opacity = '1';
         }
     });
 }
