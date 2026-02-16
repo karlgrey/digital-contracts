@@ -1,8 +1,14 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend;
+const getResend = () => {
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+};
 
-const FROM_ADDRESS = process.env.EMAIL_FROM || 'Stellplatz Buchung <stellplatz@updates.remoterepublic.com>';
+const FROM_ADDRESS = () => process.env.EMAIL_FROM || 'Stellplatz Buchung <stellplatz@updates.remoterepublic.com>';
 
 /**
  * Send booking confirmation to customer
@@ -14,8 +20,8 @@ const sendBookingConfirmation = async (booking) => {
     const endDate = new Date(booking.end_date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
     const grossPrice = (booking.monthly_price * 1.19).toFixed(2);
 
-    await resend.emails.send({
-      from: FROM_ADDRESS,
+    await getResend().emails.send({
+      from: FROM_ADDRESS(),
       to: [booking.email],
       subject: `Buchungsbestätigung #${booking.id} – Stellplatz ${booking.location_name}`,
       html: `
@@ -51,8 +57,8 @@ const sendAdminNotification = async (booking, adminEmail) => {
   if (!adminEmail) return;
 
   try {
-    await resend.emails.send({
-      from: FROM_ADDRESS,
+    await getResend().emails.send({
+      from: FROM_ADDRESS(),
       to: [adminEmail],
       subject: `Neue Buchung #${booking.id} – ${booking.first_name} ${booking.last_name}`,
       html: `
@@ -85,8 +91,8 @@ const sendContractCompleted = async (booking, pdfBuffer, companyEmail) => {
   if (companyEmail) recipients.push(companyEmail);
 
   try {
-    await resend.emails.send({
-      from: FROM_ADDRESS,
+    await getResend().emails.send({
+      from: FROM_ADDRESS(),
       to: recipients,
       subject: `Vertrag abgeschlossen #${booking.id} – Stellplatz ${booking.location_name}`,
       html: `
