@@ -989,6 +989,27 @@ app.post('/api/admin/bookings/:bookingId/sign-owner', auth.requireAuth, validato
   }
 });
 
+// DELETE Booking
+app.delete('/api/admin/bookings/:bookingId', auth.requireAuth, validators.bookingIdParam, (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = db.prepare('SELECT id, first_name, last_name FROM bookings WHERE id = ?').get(bookingId);
+    if (!booking) {
+      return res.status(404).json({ success: false, error: 'Booking not found' });
+    }
+
+    db.prepare('DELETE FROM bookings WHERE id = ?').run(bookingId);
+
+    auth.logAudit(db, req.user.role, 'booking_deleted', 'booking', bookingId, {
+      customer: `${booking.first_name} ${booking.last_name}`
+    }, req.ip, req.get('user-agent'));
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==================== COMPANIES CRUD ====================
 
 app.get('/api/admin/companies', auth.requireAuth, (req, res) => {

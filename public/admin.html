@@ -801,6 +801,7 @@
                                 <button class="action-btn" onclick="viewContractPreview(${booking.id})">Vertrag ansehen</button>
                                 <button class="action-btn" onclick="downloadContract(${booking.id})">PDF herunterladen</button>
                             ` : ''}
+                            <button class="action-btn" onclick="deleteBooking(${booking.id})" style="background:#ff6b6b;">Löschen</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -818,6 +819,25 @@
         // Download contract (PDF) - only for completed bookings
         function downloadContract(bookingId) {
             window.open(`/api/contract/${bookingId}`, '_blank');
+        }
+
+        // Delete booking
+        async function deleteBooking(bookingId) {
+            if (!confirm(`Buchung #${bookingId} wirklich löschen? Dies kann nicht rückgängig gemacht werden.`)) return;
+            try {
+                const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    loadBookings();
+                } else {
+                    alert('Fehler: ' + result.error);
+                }
+            } catch (error) {
+                alert('Fehler beim Löschen: ' + error.message);
+            }
         }
 
         // Signature Modal
