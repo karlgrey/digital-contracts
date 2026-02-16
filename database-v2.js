@@ -387,11 +387,6 @@ Sofern ein gesetzliches Widerrufsrecht besteht, beträgt die Frist 14 Tage ab Ve
 ---
 
 **Ort/Datum:** {{contract_date}}
-
-**Unterschriften**
-
-Mieter: {{customer_signature}}
-Vermieter: {{owner_signature}}
 `;
 
     db.prepare(`
