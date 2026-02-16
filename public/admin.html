@@ -1053,16 +1053,29 @@
             openCompanyModal(id);
         }
 
-        async function deleteCompany(id) {
-            if (!confirm('Möchten Sie diese Firma wirklich löschen?')) return;
+        async function deleteCompany(id, force = false) {
+            if (!force && !confirm('Möchten Sie diese Firma wirklich löschen?')) return;
 
             try {
-                const response = await fetch(`/api/admin/companies/${id}`, {
+                const url = force ? `/api/admin/companies/${id}?force=true` : `/api/admin/companies/${id}`;
+                const response = await fetch(url, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${adminToken}` }
                 });
 
-                if (!response.ok) throw new Error('Failed to delete company');
+                const result = await response.json();
+
+                if (result.hasLocations) {
+                    if (confirm(`${result.error}\nAlle zugehörigen Standorte und Buchungen werden ebenfalls gelöscht.`)) {
+                        deleteCompany(id, true);
+                    }
+                    return;
+                }
+
+                if (!result.success) {
+                    alert('Fehler: ' + result.error);
+                    return;
+                }
 
                 loadCompanies();
             } catch (error) {
@@ -1248,16 +1261,29 @@
             openLocationModal(id);
         }
 
-        async function deleteLocation(id) {
-            if (!confirm('Möchten Sie diesen Standort wirklich löschen?')) return;
+        async function deleteLocation(id, force = false) {
+            if (!force && !confirm('Möchten Sie diesen Standort wirklich löschen?')) return;
 
             try {
-                const response = await fetch(`/api/admin/locations/${id}`, {
+                const url = force ? `/api/admin/locations/${id}?force=true` : `/api/admin/locations/${id}`;
+                const response = await fetch(url, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${adminToken}` }
                 });
 
-                if (!response.ok) throw new Error('Failed to delete location');
+                const result = await response.json();
+
+                if (result.hasBookings) {
+                    if (confirm(`${result.error}\nAlle zugehörigen Buchungen werden ebenfalls gelöscht.`)) {
+                        deleteLocation(id, true);
+                    }
+                    return;
+                }
+
+                if (!result.success) {
+                    alert('Fehler: ' + result.error);
+                    return;
+                }
 
                 loadLocations();
             } catch (error) {

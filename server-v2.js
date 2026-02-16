@@ -1079,13 +1079,30 @@ app.put('/api/admin/companies/:id', auth.requireAuth, validators.idParam, valida
 
 app.delete('/api/admin/companies/:id', auth.requireAuth, validators.idParam, (req, res) => {
   try {
+    const force = req.query.force === 'true';
+    const locationCount = db.prepare('SELECT COUNT(*) as count FROM locations WHERE company_id = ?').get(req.params.id).count;
+
+    if (locationCount > 0 && !force) {
+      return res.status(409).json({
+        error: `Firma hat ${locationCount} Standort(e). Trotzdem löschen?`,
+        hasLocations: true,
+        locationCount
+      });
+    }
+
+    if (locationCount > 0) {
+      // Delete bookings for all locations of this company
+      db.prepare('DELETE FROM bookings WHERE location_id IN (SELECT id FROM locations WHERE company_id = ?)').run(req.params.id);
+      db.prepare('DELETE FROM locations WHERE company_id = ?').run(req.params.id);
+    }
+
     const result = db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Company not found' });
     }
 
-    auth.logAudit(db, req.user.role, 'company_deleted', 'company', req.params.id, null, req.ip, req.get('user-agent'));
+    auth.logAudit(db, req.user.role, 'company_deleted', 'company', req.params.id, { locationsDeleted: locationCount }, req.ip, req.get('user-agent'));
 
     res.json({ success: true });
   } catch (error) {
@@ -1168,13 +1185,28 @@ app.put('/api/admin/locations/:id', auth.requireAuth, validators.idParam, valida
 
 app.delete('/api/admin/locations/:id', auth.requireAuth, validators.idParam, (req, res) => {
   try {
+    const force = req.query.force === 'true';
+    const bookingCount = db.prepare('SELECT COUNT(*) as count FROM bookings WHERE location_id = ?').get(req.params.id).count;
+
+    if (bookingCount > 0 && !force) {
+      return res.status(409).json({
+        error: `Standort hat ${bookingCount} Buchung(en). Trotzdem löschen?`,
+        hasBookings: true,
+        bookingCount
+      });
+    }
+
+    if (bookingCount > 0) {
+      db.prepare('DELETE FROM bookings WHERE location_id = ?').run(req.params.id);
+    }
+
     const result = db.prepare('DELETE FROM locations WHERE id = ?').run(req.params.id);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Location not found' });
     }
 
-    auth.logAudit(db, req.user.role, 'location_deleted', 'location', req.params.id, null, req.ip, req.get('user-agent'));
+    auth.logAudit(db, req.user.role, 'location_deleted', 'location', req.params.id, { bookingsDeleted: bookingCount }, req.ip, req.get('user-agent'));
 
     res.json({ success: true });
   } catch (error) {
