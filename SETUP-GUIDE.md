@@ -1,191 +1,162 @@
-# Setup-Anleitung für Live-Server
+# Setup & Deployment Guide
 
-Diese Anleitung führt dich durch die Installation auf deinem Live-Server.
-
-## Schritt 1: Node.js installieren (falls noch nicht vorhanden)
+## Lokale Entwicklung
 
 ```bash
-# Ubuntu/Debian
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Überprüfen
-node --version
-npm --version
-```
-
-## Schritt 2: Projekt auf den Server hochladen
-
-Option A: Mit Git
-```bash
-cd /var/www/
-git clone <dein-repo-url> stellplatz-booking
-cd stellplatz-booking
-```
-
-Option B: Mit SFTP/FTP
-1. Alle Dateien in einen Ordner uploaden (z.B. `/var/www/stellplatz-booking`)
-
-## Schritt 3: Dependencies installieren
-
-```bash
-cd /var/www/stellplatz-booking
+# Dependencies installieren
 npm install
+
+# Server starten (Port 3000)
+node server-v2.js
+
+# Oder mit Auto-Reload
+npx nodemon server-v2.js
 ```
 
-## Schritt 4: Datenbank initialisieren
+**URLs:**
+- Buchungsformular: http://localhost:3000/booking
+- Admin-Panel: http://localhost:3000/admin
+- Deeplink-Beispiel: http://localhost:3000/booking?location=1
+
+## Projektstruktur
+
+```
+rent-it-digital/
+├── server-v2.js          # Express Backend (alle API-Routes)
+├── database-v2.js        # SQLite Schema, Migrationen, Default-Template
+├── pricing.js            # Preisformel, Template-Engine, Rabatte, Kaution
+├── validation.js         # Express-Validator Middleware
+├── auth.js               # JWT Auth + Audit-Logging
+├── config.js             # Fahrzeugtypen-Konfiguration
+├── stellplatz.db         # SQLite Datenbank (wird automatisch erstellt)
+├── public/
+│   ├── admin.html        # Admin-Dashboard (Tabs: Dashboard, Firmen, Standorte, Preise)
+│   ├── booking-v2.html   # Buchungsformular
+│   ├── booking-v2.js     # Buchungsformular JS
+│   └── index.html        # Landing Page
+├── temp/                 # Temporäre PDF-Dateien
+├── CLAUDE-CODE-SPEC.md   # Ursprüngliche Spezifikation
+└── SETUP-GUIDE.md        # Diese Datei
+```
+
+## Preisformel
+
+Alle Preise werden aus **einem einzigen Grundpreis** berechnet (editierbar im Admin unter "Preise"):
+
+```
+Preis = (Grundpreis + Längenzuschlag) × Kategoriefaktor
+```
+
+| Parameter | Wert |
+|---|---|
+| Grundpreis | 100€ netto (für Halle, bis 5m) |
+| Längenzuschlag | ab >5m: +10€ pro 0,5m Schritt |
+| Halle | ×1,00 |
+| Überdacht | ×0,75 |
+| Außenstellplatz | ×0,50 |
+
+Der Grundpreis wird in der `settings`-Tabelle gespeichert und über `Admin → Preise` geändert.
+
+## Datenbank
+
+SQLite-Datei `stellplatz.db` wird beim ersten Start automatisch erstellt mit:
+- Alle Tabellen (companies, locations, vehicle_types, bookings, etc.)
+- Default Contract Template
+- Default Grundpreis (100€)
+- Migrationen für neue Spalten (access_code, email, etc.)
+
+**Backup:**
+```bash
+cp stellplatz.db stellplatz_backup_$(date +%Y%m%d).db
+```
+
+## Production Server
+
+### Zugangsdaten
+
+| | |
+|---|---|
+| **Host** | labs.remoterepublic.com |
+| **User** | deploy |
+| **App-Pfad** | /opt/str |
+| **PM2-Prozess** | str |
+| **Git Remote** | github.com:karlgrey/digital-contracts.git |
+
+### Deployment
 
 ```bash
-npm run init-db
+# 1-Liner: Pull + Restart
+ssh deploy@labs.remoterepublic.com 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && cd /opt/str && git pull origin main && pm2 restart str'
 ```
 
-Das erstellt die SQLite Datei `stellplatz.db` mit allen Tabellen.
-
-## Schritt 5: Admin-Token setzen
-
-Erstelle eine `.env` Datei:
-```bash
-cp .env.example .env
-nano .env
-```
-
-Ändere den `ADMIN_TOKEN` zu etwas Sicherem:
-```
-ADMIN_TOKEN=dein_sehr_sicheres_token_12345
-```
-
-## Schritt 6: Mit PM2 als Service starten
+### Einzelschritte (bei Problemen)
 
 ```bash
-# PM2 global installieren
-sudo npm install -g pm2
+# Verbinden
+ssh deploy@labs.remoterepublic.com
 
-# App starten
-pm2 start server.js --name "stellplatz" --env .env
+# NVM laden (nötig für node/pm2)
+export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-# Beim Boot starten
-pm2 startup
-pm2 save
+# In App-Verzeichnis
+cd /opt/str
+
+# Code aktualisieren
+git pull origin main
+
+# Bei neuen Dependencies
+npm install
+
+# Neustart
+pm2 restart str
+
+# Status prüfen
+pm2 list
+pm2 logs str --lines 20 --nostream
 ```
 
-## Schritt 7: Mit Nginx / Apache als Reverse Proxy
-
-### Nginx Konfiguration
-```nginx
-server {
-    listen 80;
-    server_name stellplatz.deine-domain.de;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Dann aktivieren:
-```bash
-sudo ln -s /etc/nginx/sites-available/stellplatz /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-### Apache Konfiguration
-```apache
-<VirtualHost *:80>
-    ServerName stellplatz.deine-domain.de
-    
-    ProxyPreserveHost On
-    ProxyPass / http://localhost:3000/
-    ProxyPassReverse / http://localhost:3000/
-</VirtualHost>
-```
-
-## Schritt 8: SSL/HTTPS (Let's Encrypt)
+### PM2-Befehle
 
 ```bash
-sudo apt-get install certbot
-sudo certbot certonly --standalone -d stellplatz.deine-domain.de
-# oder mit Nginx
-sudo certbot --nginx -d stellplatz.deine-domain.de
+pm2 list                    # Alle Prozesse anzeigen
+pm2 logs str --lines 50     # Live-Logs
+pm2 restart str             # Neustart
+pm2 stop str                # Stoppen
+pm2 describe str            # Details (Pfad, PID, Uptime, etc.)
 ```
 
-## Schritt 9: Datenbank initialisieren (Locations + Preise)
-
-Nach dem ersten Start kannst du in der SQLite die Locations eintragen:
+### Datenbank-Backup (Server)
 
 ```bash
-cd /var/www/stellplatz-booking
-sqlite3 stellplatz.db
-
-# Im SQLite-Prompt:
-INSERT INTO locations (name, company, city) VALUES ('Location Potsdam', 'Firma A GmbH', 'Potsdam');
-INSERT INTO locations (name, company, city) VALUES ('Location Brandenburg', 'Firma A GmbH', 'Brandenburg');
-INSERT INTO locations (name, company, city) VALUES ('Location Frankfurt/Oder', 'Firma B GmbH', 'Frankfurt/Oder');
-
-# Überprüfen
-SELECT * FROM locations;
-
-# Exit
-.quit
+ssh deploy@labs.remoterepublic.com 'cp /opt/str/stellplatz.db /opt/str/stellplatz_backup_$(date +%Y%m%d).db'
 ```
 
-## Schritt 10: Test
+## API-Übersicht
 
-1. Browser öffnen: `https://stellplatz.deine-domain.de/booking.html`
-2. Admin-Panel: `https://stellplatz.deine-domain.de/admin.html`
-   - Dein ADMIN_TOKEN eingeben
+### Public
+| Methode | Endpoint | Beschreibung |
+|---|---|---|
+| GET | /api/locations | Alle Standorte |
+| GET | /api/pricing/:locationId | Preise für Standort |
+| GET | /api/availability | Verfügbarkeit prüfen |
+| POST | /api/bookings | Neue Buchung erstellen |
+| GET | /api/contract-preview/:id | Vertragsvorschau (HTML) |
+| GET | /api/contract/:id | Vertrag als PDF |
+| GET | /api/invite/:token | Invite-Token einlösen |
 
-## Logs anschauen
-
-```bash
-# Live logs
-pm2 logs stellplatz
-
-# Oder alle logs
-pm2 logs
-
-# Spezifische Nachricht suchen
-pm2 logs stellplatz | grep "error"
-```
-
-## Backups
-
-```bash
-# Datenbank regelmäßig backup'en
-cp /var/www/stellplatz-booking/stellplatz.db /backup/stellplatz_$(date +%Y%m%d).db
-```
-
-## Häufige Probleme
-
-### Port 3000 bereits in Verwendung
-```bash
-# Prozess finden
-lsof -i :3000
-
-# Kill und neustarten
-kill <PID>
-pm2 restart stellplatz
-```
-
-### Keine Berechtigung auf Datenbank
-```bash
-chmod 755 /var/www/stellplatz-booking
-chmod 644 /var/www/stellplatz-booking/stellplatz.db
-```
-
-### E-Mails senden
-Für automatische E-Mail-Versand später: Nodemailer integrieren
-```bash
-npm install nodemailer
-```
-
----
-
-Du bist jetzt bereit! 🚀
+### Admin (Bearer Token Auth)
+| Methode | Endpoint | Beschreibung |
+|---|---|---|
+| POST | /api/admin/auth/login | Login |
+| GET | /api/admin/dashboard | Dashboard-Stats |
+| GET | /api/admin/bookings | Buchungen (mit Filtern) |
+| GET | /api/admin/bookings/export.csv | CSV-Export |
+| POST | /api/admin/bookings/:id/sign-owner | Vermieter-Unterschrift |
+| GET/POST/PUT/DELETE | /api/admin/companies/* | Firmen CRUD |
+| GET/POST/PUT/DELETE | /api/admin/locations/* | Standorte CRUD |
+| GET/PUT | /api/admin/pricing/config | Grundpreis lesen/ändern |
+| GET/POST/DELETE | /api/admin/discounts/* | Rabatte CRUD |
+| GET/POST/DELETE | /api/admin/blackouts/* | Sperrzeiten CRUD |
+| GET/POST | /api/admin/templates/* | Vertragsvorlagen |
+| POST | /api/admin/invite-tokens | Einladungslink erstellen |
+| GET | /api/admin/audit-log | Audit-Log |
