@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellplatz buchen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.47059;
+            font-weight: 400;
+            letter-spacing: -0.022em;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            line-height: 1.08349;
+            font-weight: 600;
+            letter-spacing: -0.003em;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 21px;
+            line-height: 1.381;
+            font-weight: 400;
+            letter-spacing: .011em;
+            color: #6e6e73;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #fff;
+            font-size: 14px;
+            color: #6e6e73;
+            transition: all 150ms ease;
+        }
+
+        .step.active {
+            background: #0071e3;
+            color: #fff;
+        }
+
+        .step.completed {
+            background: #34c759;
+            color: #fff;
+        }
+
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .card.hidden {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 17px;
+            line-height: 1.23536;
+            font-weight: 600;
+            letter-spacing: -0.022em;
+            margin-bottom: 8px;
+        }
+
+        .form-group .hint {
+            font-size: 14px;
+            color: #6e6e73;
+            margin-top: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 17px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            background: #fff;
+            transition: all 150ms ease;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 4px rgba(0,113,227,0.1);
+        }
+
+        .form-control.error {
+            border-color: #ff3b30;
+        }
+
+        .error-message {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .segmented-control {
+            display: flex;
+            gap: 8px;
+            padding: 4px;
+            background: #f5f5f7;
+            border-radius: 12px;
+        }
+
+        .segmented-control button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 150ms ease;
+            color: #1d1d1f;
+        }
+
+        .segmented-control button.active {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .price-box {
+            position: sticky;
+            top: 20px;
+            background: #f5f5f7;
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .price-box h3 {
+            font-size: 21px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+        }
+
+        .price-row.total {
+            border-top: 1px solid #d2d2d7;
+            margin-top: 8px;
+            padding-top: 16px;
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .price-row .label {
+            color: #6e6e73;
+        }
+
+        .price-row .value {
+            font-weight: 500;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 28px;
+            background: #0071e3;
+            color: #fff;
+            border: none;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 150ms ease;
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #0077ed;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #0071e3;
+            border: 1px solid #0071e3;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f7;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .signature-canvas {
+            width: 100%;
+            height: 200px;
+            border: 2px dashed #d2d2d7;
+            border-radius: 12px;
+            cursor: crosshair;
+            background: #fff;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .signature-canvas.active {
+            border-color: #0071e3;
+            border-style: solid;
+        }
+
+        .signature-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            flex: 1;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .checkbox-group a {
+            color: #0071e3;
+            text-decoration: none;
+        }
+
+        .checkbox-group a:hover {
+            text-decoration: underline;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .preview-contract {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 30px;
+            background: #fff;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .preview-contract h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .preview-contract h2 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .success-message .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .success-message h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .success-message p {
+            font-size: 17px;
+            color: #6e6e73;
+            margin-bottom: 30px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .discount-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        .discount-input input {
+            flex: 1;
+        }
+
+        .discount-applied {
+            background: #34c759;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .header .subtitle {
+                font-size: 17px;
+            }
+
+            .card {
+                padding: 24px;
+            }
+
+            .steps {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Stellplatz buchen</h1>
+            <p class="subtitle">Mieten Sie Ihren idealen Stellplatz in wenigen Schritten</p>
+        </div>
+
+        <div class="steps">
+            <div class="step active" data-step="1">
+                <span class="step-number">1</span>
+                <span>Auswahl</span>
+            </div>
+            <div class="step" data-step="2">
+                <span class="step-number">2</span>
+                <span>Ihre Daten</span>
+            </div>
+            <div class="step" data-step="3">
+                <span class="step-number">3</span>
+                <span>Vorschau</span>
+            </div>
+            <div class="step" data-step="4">
+                <span class="step-number">4</span>
+                <span>Unterschrift</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Selection -->
+        <div class="card" id="step1">
+            <div class="grid">
+                <div style="grid-column: 1 / -1;">
+                    <div class="form-group">
+                        <label for="location">Standort</label>
+                        <select id="location" class="form-control" required>
+                            <option value="">Bitte wählen...</option>
+                        </select>
+                        <div class="hint" id="location-address"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2" style="grid-column: 1 / -1;">
+                    <div class="form-group">
+                        <label for="vehicleType">Fahrzeuggröße</label>
+                        <select id="vehicleType" class="form-control" required>
+                            <option value="">Bitte wählen...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kategorie</label>
+                        <div class="segmented-control">
+                            <button type="button" data-category="outside">Außen</button>
+                            <button type="button" data-category="covered">Überdacht</button>
+                            <button type="button" data-category="indoor">Halle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2" style="grid-column: 1 / -1;">
+                    <div class="form-group">
+                        <label for="startDate">Mietbeginn</label>
+                        <input type="date" id="startDate" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endDate">Mietende</label>
+                        <input type="date" id="endDate" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="discountCode">Rabattcode (optional)</label>
+                    <div class="discount-input">
+                        <input type="text" id="discountCode" class="form-control" placeholder="Code eingeben">
+                        <button type="button" class="btn btn-secondary" id="applyDiscount">Einlösen</button>
+                    </div>
+                    <div id="discount-status"></div>
+                </div>
+            </div>
+
+            <div class="price-box">
+                <h3>Zusammenfassung</h3>
+                <div class="price-row" style="font-size: 13px; color: #6e6e73;">
+                    <span class="label">Monatsmiete (Netto)</span>
+                    <span class="value" id="monthlyPriceNet">-</span>
+                </div>
+                <div class="price-row" style="font-size: 13px; color: #6e6e73;">
+                    <span class="label">zzgl. MwSt. (19%)</span>
+                    <span class="value" id="vatAmount">-</span>
+                </div>
+                <div class="price-row" style="font-weight: 600;">
+                    <span class="label">Monatsmiete (Brutto)</span>
+                    <span class="value" id="monthlyPrice">-</span>
+                </div>
+                <div class="price-row" id="proRataRow" style="display:none;">
+                    <span class="label">Anteilige Miete (1. Monat)</span>
+                    <span class="value" id="proRataPrice">-</span>
+                </div>
+                <div class="price-row" id="discountRow" style="display:none;">
+                    <span class="label">Rabatt</span>
+                    <span class="value" style="color: #34c759;" id="discountAmount">-</span>
+                </div>
+                <div class="price-row">
+                    <span class="label">Kaution (2 Monatsmieten)</span>
+                    <span class="value" id="depositAmount">-</span>
+                </div>
+                <div class="price-row total">
+                    <span class="label">Gesamt bei Anmietung</span>
+                    <span class="value" id="totalAmount">-</span>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <button type="button" class="btn" id="nextStep1">Weiter</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Customer Data -->
+        <div class="card hidden" id="step2">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label for="firstName">Vorname</label>
+                    <input type="text" id="firstName" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Nachname</label>
+                    <input type="text" id="lastName" class="form-control" required>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="address">Adresse</label>
+                    <input type="text" id="address" class="form-control" placeholder="Straße, Hausnummer, PLZ, Ort" required>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="email">E-Mail</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+
+                <div style="grid-column: 1 / -1;">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="agbAccept" required>
+                        <label for="agbAccept">
+                            Ich akzeptiere die <a href="#" target="_blank">AGB</a> und <a href="#" target="_blank">Datenschutzerklärung</a>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="btn btn-secondary" id="prevStep2">Zurück</button>
+                <button type="button" class="btn" id="nextStep2">Weiter</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Preview -->
+        <div class="card hidden" id="step3">
+            <h2 style="margin-bottom: 20px;">Vertragsvorschau</h2>
+            <div class="preview-contract" id="contractPreview">
+                Lädt...
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" id="prevStep3">Zurück</button>
+                <button type="button" class="btn" id="nextStep3">Unterschrift hinzufügen</button>
+            </div>
+        </div>
+
+        <!-- Step 4: Signature -->
+        <div class="card hidden" id="step4">
+            <h2 style="margin-bottom: 20px;">Ihre Unterschrift</h2>
+            <p style="margin-bottom: 20px; color: #6e6e73;">Bitte unterschreiben Sie mit Ihrem vollen Namen im Feld unten.</p>
+
+            <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+
+            <div class="signature-actions">
+                <button type="button" class="btn btn-secondary" id="clearSignature">Zurücksetzen</button>
+                <button type="button" class="btn btn-secondary" id="undoSignature">Rückgängig</button>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 30px;">
+                <button type="button" class="btn btn-secondary" id="prevStep4">Zurück</button>
+                <button type="button" class="btn" id="submitBooking">
+                    <span id="submitText">Buchung absenden</span>
+                    <span id="submitLoading" class="loading" style="display:none;"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Success -->
+        <div class="card hidden" id="successStep">
+            <div class="success-message">
+                <div class="icon">✓</div>
+                <h2>Buchung erfolgreich!</h2>
+                <p>Ihre Buchung wurde erfolgreich übermittelt. Sie erhalten in Kürze eine Bestätigung per E-Mail.</p>
+                <p style="font-size: 14px;">Buchungs-ID: <strong id="bookingId"></strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/booking-v2.js"></script>
+</body>
+</html>

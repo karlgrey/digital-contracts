@@ -884,7 +884,8 @@
                     closeSignatureModal();
                     loadBookings();
                 } else {
-                    alert('Fehler beim Speichern der Unterschrift');
+                    const errorData = await response.json();
+                    alert('Fehler beim Speichern der Unterschrift: ' + (errorData.error || response.statusText));
                 }
             } catch (error) {
                 alert('Fehler: ' + error.message);
