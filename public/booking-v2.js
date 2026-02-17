@@ -221,9 +221,6 @@ function attachEventListeners() {
         updatePricing();
     });
 
-    // Discount code
-    document.getElementById('applyDiscount').addEventListener('click', applyDiscount);
-
     // Navigation
     document.getElementById('nextStep1').addEventListener('click', () => goToStep(2));
     document.getElementById('prevStep2').addEventListener('click', () => goToStep(1));
@@ -286,24 +283,6 @@ async function updatePricing() {
     } catch (error) {
         console.error('Error updating pricing:', error);
     }
-}
-
-// Apply discount
-async function applyDiscount() {
-    const code = document.getElementById('discountCode').value.trim();
-    if (!code) return;
-
-    state.discountCode = code.toUpperCase();
-
-    // Discount calculation happens on backend
-    calculateTotal();
-    updatePricingDisplay();
-
-    document.getElementById('discount-status').innerHTML = `
-        <div class="discount-applied">
-            ✓ Rabattcode wird bei Buchung geprüft
-        </div>
-    `;
 }
 
 // Calculate total
