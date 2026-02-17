@@ -372,13 +372,17 @@ Die Kündigung bedarf der Textform; die Übermittlung per E-Mail ist ausreichend
 
 (2) Kamera-/Zutrittsprotokolle am Standort: Hinweis gemäß Aushang.
 
+(3) Die vollständige Datenschutzerklärung ist einsehbar unter: {{base_url}}/datenschutz
+
 ## §10 Schlussbestimmungen
 
-(1) Änderungen/Ergänzungen bedürfen der Textform.
+(1) Es gelten die Allgemeinen Geschäftsbedingungen (AGB) des Vermieters, einsehbar unter: {{base_url}}/agb
 
-(2) Sollte eine Bestimmung unwirksam sein, bleibt der Vertrag im Übrigen wirksam.
+(2) Änderungen/Ergänzungen bedürfen der Textform.
 
-(3) Gerichtsstand: Sitz des Vermieters, sofern gesetzlich zulässig.
+(3) Sollte eine Bestimmung unwirksam sein, bleibt der Vertrag im Übrigen wirksam.
+
+(4) Gerichtsstand: Sitz des Vermieters, sofern gesetzlich zulässig.
 
 ## Widerruf / Verbraucherhinweis
 

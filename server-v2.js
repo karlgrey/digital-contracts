@@ -383,7 +383,8 @@ const buildTemplateData = (booking) => {
     discount_code: booking.discount_amount > 0 ? booking.discount_code : null,
     discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
     caution: booking.caution.toFixed(2),
-    contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+    contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+    base_url: process.env.BASE_URL || 'https://str.remoterepublic.com'
   };
 };
 
@@ -673,6 +674,7 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
       discount_amount: booking.discount_amount > 0 ? booking.discount_amount.toFixed(2) : null,
       caution: booking.caution.toFixed(2),
       contract_date: new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }),
+      base_url: process.env.BASE_URL || 'https://str.remoterepublic.com',
       customer_signature: booking.customer_signature_svg || '(Nicht unterschrieben)',
       owner_signature: booking.owner_signature_svg || '(Nicht unterschrieben)'
     };
