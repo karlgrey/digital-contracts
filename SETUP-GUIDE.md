@@ -16,6 +16,8 @@ npx nodemon server-v2.js
 **URLs:**
 - Buchungsformular: http://localhost:3000/booking
 - Admin-Panel: http://localhost:3000/admin
+- AGB: http://localhost:3000/agb
+- Datenschutz: http://localhost:3000/datenschutz
 - Deeplink-Beispiel: http://localhost:3000/booking?location=1
 
 ## Projektstruktur
@@ -35,6 +37,8 @@ rent-it-digital/
 │   ├── admin.html        # Admin-Dashboard (Tabs: Dashboard, Firmen, Standorte, Preise)
 │   ├── booking-v2.html   # Buchungsformular
 │   ├── booking-v2.js     # Buchungsformular JS
+│   ├── agb.html          # Allgemeine Geschäftsbedingungen
+│   ├── datenschutz.html  # Datenschutzerklärung (DSGVO)
 │   └── index.html        # Landing Page
 ├── CLAUDE-CODE-SPEC.md   # Ursprüngliche Spezifikation
 └── SETUP-GUIDE.md        # Diese Datei
@@ -94,6 +98,7 @@ Das Vertragstemplate ist in der Datenbank gespeichert (`contract_templates`-Tabe
 Wichtige Template-Variablen:
 - `access_code` — Schlüsseltresor-Code (aus Location, wenn vorhanden)
 - `company_email` — E-Mail der Firma (aus Company)
+- `base_url` — Basis-URL für Links zu AGB/Datenschutz im Vertrag
 - `discount_code` / `discount_amount` — nur angezeigt wenn Rabatt > 0
 
 ## Datenbank
@@ -225,9 +230,32 @@ Oder im Admin-Panel unter Vertragsvorlagen bearbeiten.
 | POST | /api/admin/invite-tokens | Einladungslink erstellen |
 | GET | /api/admin/audit-log | Audit-Log |
 
-### Deeplinks
+### Seiten (Clean URLs)
 | URL | Beschreibung |
 |---|---|
+| /booking | Buchungsformular |
 | /booking?location=1 | Buchungsformular mit vorausgewähltem Standort |
 | /booking?invite=TOKEN | Buchungsformular mit Invite-Token |
-| /admin.html | Admin-Panel (Login erforderlich) |
+| /admin | Admin-Panel (Login erforderlich) |
+| /agb | Allgemeine Geschäftsbedingungen |
+| /datenschutz | Datenschutzerklärung |
+
+## Buchungsformular-Validierung
+
+Das Buchungsformular validiert in jedem Schritt:
+
+**Step 1 — Stellplatz & Zeitraum:**
+- Standort muss ausgewählt sein
+- Fahrzeuggröße muss ausgewählt sein
+- Start- und Enddatum müssen gesetzt sein
+- Enddatum muss nach Startdatum liegen
+- Mindestmietdauer: 1 Monat
+
+**Step 2 — Persönliche Daten:**
+- Vorname, Nachname, Adresse sind Pflichtfelder
+- E-Mail-Adresse muss gültig sein
+- AGB und Datenschutzerklärung müssen akzeptiert werden
+
+**Step 3 — Vertragsvorschau**
+
+**Step 4 — Unterschrift und Absenden**
