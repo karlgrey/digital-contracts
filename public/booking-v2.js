@@ -397,14 +397,25 @@ function validateAndGoToStep2() {
 
 // Validate and go to step 3
 function validateAndGoToStep3() {
+    const errors = [];
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
     const address = document.getElementById('address').value.trim();
     const email = document.getElementById('email').value.trim();
     const agbAccept = document.getElementById('agbAccept').checked;
 
-    if (!firstName || !lastName || !address || !email || !agbAccept) {
-        alert('Bitte füllen Sie alle Pflichtfelder aus und akzeptieren Sie die AGB.');
+    if (!firstName) errors.push('Bitte geben Sie Ihren Vornamen ein.');
+    if (!lastName) errors.push('Bitte geben Sie Ihren Nachnamen ein.');
+    if (!address) errors.push('Bitte geben Sie Ihre Adresse ein.');
+    if (!email) {
+        errors.push('Bitte geben Sie Ihre E-Mail-Adresse ein.');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+    }
+    if (!agbAccept) errors.push('Bitte akzeptieren Sie die AGB.');
+
+    if (errors.length > 0) {
+        alert(errors.join('\n'));
         return;
     }
 
