@@ -440,7 +440,7 @@ async function loadContractPreview() {
     const vehicleLabel = document.querySelector('#vehicleType option:checked').textContent;
 
     const html = `
-        <h1>Stellplatzmietvertrag (temporär)</h1>
+        <h1>Stellplatzmietvertrag</h1>
 
         <h2>Vertragsparteien</h2>
         <p><strong>Mieter:</strong> ${document.getElementById('firstName').value} ${document.getElementById('lastName').value}<br>

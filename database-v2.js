@@ -281,7 +281,7 @@ const checkAndMigrateBookings = () => {
 const ensureDefaultTemplate = () => {
   const existing = db.prepare('SELECT COUNT(*) as count FROM contract_templates').get();
   if (existing.count === 0) {
-    const defaultTemplate = `# Stellplatzmietvertrag (temporär)
+    const defaultTemplate = `# Stellplatzmietvertrag
 
 ## Vertragsparteien
 
