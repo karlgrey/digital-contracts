@@ -81,6 +81,14 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/agb', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'agb.html'));
+});
+
+app.get('/datenschutz', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'datenschutz.html'));
+});
+
 // Backward compatibility - redirect old .html URLs to clean URLs
 app.get('/booking.html', (req, res) => {
   res.redirect(301, '/booking' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
