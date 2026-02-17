@@ -222,7 +222,7 @@ function attachEventListeners() {
     });
 
     // Navigation
-    document.getElementById('nextStep1').addEventListener('click', () => goToStep(2));
+    document.getElementById('nextStep1').addEventListener('click', validateAndGoToStep2);
     document.getElementById('prevStep2').addEventListener('click', () => goToStep(1));
     document.getElementById('nextStep2').addEventListener('click', validateAndGoToStep3);
     document.getElementById('prevStep3').addEventListener('click', () => goToStep(2));
@@ -357,6 +357,42 @@ function goToStep(step) {
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Validate step 1 and go to step 2
+function validateAndGoToStep2() {
+    const errors = [];
+    const location = document.getElementById('location').value;
+    const vehicleType = document.getElementById('vehicleType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!location) errors.push('Bitte wählen Sie einen Standort aus.');
+    if (!vehicleType) errors.push('Bitte wählen Sie eine Fahrzeuggröße aus.');
+    if (!startDate) errors.push('Bitte wählen Sie ein Startdatum.');
+    if (!endDate) errors.push('Bitte wählen Sie ein Enddatum.');
+
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (end <= start) {
+            errors.push('Das Enddatum muss nach dem Startdatum liegen.');
+        } else {
+            // Check minimum 1 month
+            const minEnd = new Date(start);
+            minEnd.setMonth(minEnd.getMonth() + 1);
+            if (end < minEnd) {
+                errors.push('Der Mietzeitraum muss mindestens 1 Monat betragen.');
+            }
+        }
+    }
+
+    if (errors.length > 0) {
+        alert(errors.join('\n'));
+        return;
+    }
+
+    goToStep(2);
 }
 
 // Validate and go to step 3
