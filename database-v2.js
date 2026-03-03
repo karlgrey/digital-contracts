@@ -325,7 +325,11 @@ Die Kündigung bedarf der Textform; die Übermittlung per E-Mail ist ausreichend
 
 (2) Fälligkeit: monatlich zum 1. des Monats (Vorkasse).
 
-(3) Kaution: € {{caution}}, zahlbar vor Übergabe.
+{{#if company_bank_account}}
+(3) Bankverbindung: {{company_bank_account}}
+{{/if}}
+
+(4) Kaution: € {{caution}}, zahlbar vor Übergabe.
 
 ## §4 Nutzungsvorgaben / Hausordnung
 

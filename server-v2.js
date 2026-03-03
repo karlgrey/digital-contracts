@@ -340,6 +340,7 @@ const getBookingForContract = (bookingId) => {
       c.postal_code as company_postal_code,
       c.city as company_city,
       c.email as company_email,
+      c.bank_account as company_bank_account,
       vt.label as vehicle_label,
       vt.max_length as vehicle_length,
       ct.body_md as template_body
@@ -365,6 +366,7 @@ const buildTemplateData = (booking) => {
     company_postal_code: booking.company_postal_code,
     company_city: booking.company_city,
     company_email: booking.company_email || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
+    company_bank_account: booking.company_bank_account || null,
     customer_first_name: booking.first_name,
     customer_last_name: booking.last_name,
     customer_address: booking.address,
@@ -655,6 +657,7 @@ app.get('/api/contract-preview/:bookingId', validators.bookingIdParam, (req, res
       company_postal_code: booking.company_postal_code,
       company_city: booking.company_city,
       company_email: booking.company_email_address || booking.company_name?.toLowerCase().replace(/\s+/g, '-'),
+      company_bank_account: booking.company_bank_account || null,
       customer_first_name: booking.first_name,
       customer_last_name: booking.last_name,
       customer_address: booking.address,
