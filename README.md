@@ -4,9 +4,10 @@ Volldigitales Buchungs- und Vertragssystem für Stellplatzvermietung (Wohnmobile
 
 ## Features
 
-- **Online-Buchungsformular** mit Standortauswahl, Fahrzeuggröße, Zeitraum und digitaler Unterschrift
+- **Online-Buchungsformular** mit Standortauswahl, Fahrzeuggröße, Mindestlaufzeit und digitaler Unterschrift
 - **Automatische Preisberechnung** aus einem Grundpreis (Längenzuschlag + Kategoriefaktor)
 - **PDF-Vertragsgenerierung** mit beiden Unterschriften (SVG)
+- **Online-Kündigung** zum Monatsende (Frist: ein Monat) – beidseitig via Deeplink im Vertrag (Mieter) oder Admin-Panel (Vermieter), digital unterschrieben, als Nachtrag-PDF per E-Mail
 - **E-Mail-Versand** via Resend (Buchungsbestätigung, Admin-Benachrichtigung, Vertrag als PDF)
 - **Admin-Panel** mit Dashboard, Firmen-, Standort- und Preisverwaltung
 - **JWT-Authentifizierung** mit Audit-Logging
@@ -32,6 +33,7 @@ Das System läuft auf `http://localhost:3000`. Die SQLite-Datenbank wird beim er
 | `/booking?location=1` | Buchung mit vorausgewähltem Standort |
 | `/booking?invite=TOKEN` | Buchung mit Einladungslink |
 | `/admin` | Admin-Panel (Login erforderlich) |
+| `/kuendigung?token=TOKEN` | Vertragskündigung (Deeplink aus dem Vertrags-PDF) |
 | `/agb` | Allgemeine Geschäftsbedingungen |
 | `/datenschutz` | Datenschutzerklärung |
 
