@@ -3,18 +3,22 @@ const PDFDocument = require('pdfkit');
 const { renderSVGSignature } = require('./pdf-utils');
 
 /**
- * Berechnet das Wirksamkeitsdatum einer Kündigung:
- * erstes Monatsende, das >= (heute + Frist) UND >= Ende der Mindestlaufzeit ist.
+ * Berechnet das Wirksamkeitsdatum einer ordentlichen Kündigung.
+ * Kündigungsfrist: ein Kalendermonat zum Monatsende. Das Vertragsende ist das
+ * erste Monatsende, das (a) die Frist von einem Kalendermonat ab heute wahrt
+ * UND (b) nicht vor dem Ende der Mindestmietzeit (endDate) liegt.
  * Alle Daten als ISO-String 'YYYY-MM-DD'. UTC-basiert (zeitzonenstabil).
  */
-function calculateEffectiveDate(todayISO, endDateISO, noticePeriodDays) {
-  const earliest = new Date(todayISO + 'T00:00:00Z');
-  earliest.setUTCDate(earliest.getUTCDate() + noticePeriodDays);
+function calculateEffectiveDate(todayISO, endDateISO) {
+  const today = new Date(todayISO + 'T00:00:00Z');
+  // Frühestmögliches Vertragsende: Ende des Folgemonats (= ein Kalendermonat
+  // Frist zum Monatsende). Tag 0 des übernächsten Monats = letzter Tag des Folgemonats.
+  const earliest = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 2, 0));
 
   const minTermEnd = new Date(endDateISO + 'T00:00:00Z');
-  const lowerBound = earliest.getTime() > minTermEnd.getTime() ? earliest : minTermEnd;
+  const lowerBound = earliest.getTime() >= minTermEnd.getTime() ? earliest : minTermEnd;
 
-  // Letzter Tag des Monats von lowerBound (Tag 0 des Folgemonats)
+  // Auf das Monatsende des maßgeblichen Monats runden (Tag 0 des Folgemonats).
   const monthEnd = new Date(Date.UTC(lowerBound.getUTCFullYear(), lowerBound.getUTCMonth() + 1, 0));
   return monthEnd.toISOString().slice(0, 10);
 }

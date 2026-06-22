@@ -1591,7 +1591,7 @@ app.post('/api/cancellation/:token/verify', validators.verifyCancellation, (req,
       return res.status(400).json({ success: false, error: 'Vertrag ist noch nicht abgeschlossen und kann nicht gekündigt werden.' });
     }
     const today = new Date().toISOString().slice(0, 10);
-    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date);
     res.json({
       success: true,
       alreadyCancelled: false,
@@ -1621,7 +1621,7 @@ app.post('/api/cancellation/:token/submit', validators.submitCancellation, (req,
     if (!sig.valid) return res.status(400).json({ success: false, error: sig.error });
 
     const today = new Date().toISOString().slice(0, 10);
-    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date);
     const clientIp = String(req.ip || req.connection?.remoteAddress || 'unknown');
     const userAgent = String(req.get('user-agent') || 'unknown');
 
@@ -1660,7 +1660,7 @@ app.post('/api/admin/bookings/:bookingId/cancel', auth.requireAuth, validators.o
     if (!sig.valid) return res.status(400).json({ success: false, error: sig.error });
 
     const today = new Date().toISOString().slice(0, 10);
-    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date);
     const clientIp = String(req.ip || req.connection?.remoteAddress || 'unknown');
     const userAgent = String(req.get('user-agent') || 'unknown');
 
