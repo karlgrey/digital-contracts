@@ -166,7 +166,7 @@ const validators = {
 
   // Query parameter validators
   bookingFilters: [
-    query('status').optional().isIn(['pending_customer_signature', 'pending_owner_signature', 'completed']),
+    query('status').optional().isIn(['pending_customer_signature', 'pending_owner_signature', 'completed', 'terminated']),
     query('location_id').optional().isInt({ min: 1 }),
     query('from').optional().isISO8601().toDate(),
     query('to').optional().isISO8601().toDate(),

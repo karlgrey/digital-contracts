@@ -91,6 +91,8 @@ app.get('/datenschutz', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'datenschutz.html'));
 });
 
+app.get('/kuendigung', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cancellation.html')));
+
 // Backward compatibility - redirect old .html URLs to clean URLs
 app.get('/booking.html', (req, res) => {
   res.redirect(301, '/booking' + (req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''));
@@ -1559,6 +1561,112 @@ app.get('/api/invite/:token', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ==================== CANCELLATION ====================
+
+app.post('/api/cancellation/:token/verify', validators.verifyCancellation, (req, res) => {
+  try {
+    const booking = cancellation.getBookingByToken(db, req.params.token);
+    if (!booking) return res.status(404).json({ success: false, error: 'Ungültiger Link' });
+    if (!cancellation.verifyIdentity(booking, req.body.identifier)) {
+      return res.status(403).json({ success: false, error: 'Name oder E-Mail stimmt nicht überein' });
+    }
+    if (booking.status === 'terminated' || cancellation.hasCancellation(db, booking.id)) {
+      return res.json({ success: true, alreadyCancelled: true });
+    }
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ success: false, error: 'Vertrag ist noch nicht abgeschlossen und kann nicht gekündigt werden.' });
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    res.json({
+      success: true,
+      alreadyCancelled: false,
+      customerName: `${booking.first_name} ${booking.last_name}`,
+      locationName: booking.location_name,
+      effectiveDate
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/cancellation/:token/submit', validators.submitCancellation, (req, res) => {
+  try {
+    const booking = cancellation.getBookingByToken(db, req.params.token);
+    if (!booking) return res.status(404).json({ success: false, error: 'Ungültiger Link' });
+    if (!cancellation.verifyIdentity(booking, req.body.identifier)) {
+      return res.status(403).json({ success: false, error: 'Name oder E-Mail stimmt nicht überein' });
+    }
+    if (booking.status === 'terminated' || cancellation.hasCancellation(db, booking.id)) {
+      return res.status(409).json({ success: false, error: 'Dieser Vertrag wurde bereits gekündigt.' });
+    }
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ success: false, error: 'Vertrag ist noch nicht abgeschlossen.' });
+    }
+    const sig = pricing.validateSignature(req.body.signatureSVG);
+    if (!sig.valid) return res.status(400).json({ success: false, error: sig.error });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    const clientIp = String(req.ip || req.connection?.remoteAddress || 'unknown');
+    const userAgent = String(req.get('user-agent') || 'unknown');
+
+    cancellation.createCancellation(db, {
+      bookingId: booking.id, initiatedBy: 'customer', reason: req.body.reason,
+      effectiveDate, signatureSvg: req.body.signatureSVG, signatureImage: req.body.signatureImage,
+      signerIp: clientIp, signerUserAgent: userAgent
+    });
+    auth.logAudit(db, 'customer', 'contract_cancelled', 'booking', booking.id, { effectiveDate }, clientIp, userAgent);
+
+    res.json({ success: true, effectiveDate });
+
+    cancellation.generateCancellationPDFBuffer(db, booking.id)
+      .then(({ pdfBuffer, booking: b, cancellation: c }) => mailer.sendCancellationConfirmation(b, c, pdfBuffer, b.company_email))
+      .catch(err => console.error('Error sending cancellation email:', err));
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/bookings/:bookingId/cancel', auth.requireAuth, validators.ownerCancel, (req, res) => {
+  try {
+    const booking = db.prepare(`
+        SELECT b.*, l.name AS location_name, c.name AS company_name, c.email AS company_email
+        FROM bookings b JOIN locations l ON b.location_id = l.id
+        LEFT JOIN companies c ON l.company_id = c.id WHERE b.id = ?
+      `).get(req.params.bookingId);
+    if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' });
+    if (booking.status === 'terminated' || cancellation.hasCancellation(db, booking.id)) {
+      return res.status(409).json({ success: false, error: 'Bereits gekündigt.' });
+    }
+    if (booking.status !== 'completed') {
+      return res.status(400).json({ success: false, error: 'Nur abgeschlossene Verträge sind kündbar.' });
+    }
+    const sig = pricing.validateSignature(req.body.signatureSVG);
+    if (!sig.valid) return res.status(400).json({ success: false, error: sig.error });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const effectiveDate = cancellation.calculateEffectiveDate(today, booking.end_date, booking.notice_period_days || 30);
+    const clientIp = String(req.ip || req.connection?.remoteAddress || 'unknown');
+    const userAgent = String(req.get('user-agent') || 'unknown');
+
+    cancellation.createCancellation(db, {
+      bookingId: booking.id, initiatedBy: 'owner', reason: req.body.reason,
+      effectiveDate, signatureSvg: req.body.signatureSVG, signatureImage: req.body.signatureImage,
+      signerIp: clientIp, signerUserAgent: userAgent
+    });
+    auth.logAudit(db, req.user.role, 'contract_cancelled', 'booking', booking.id, { effectiveDate, by: 'owner' }, clientIp, userAgent);
+
+    res.json({ success: true, effectiveDate });
+
+    cancellation.generateCancellationPDFBuffer(db, booking.id)
+      .then(({ pdfBuffer, booking: b, cancellation: c }) => mailer.sendCancellationConfirmation(b, c, pdfBuffer, b.company_email))
+      .catch(err => console.error('Error sending cancellation email:', err));
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
