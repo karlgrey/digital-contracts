@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { calculateEffectiveDate, generateCancellationToken } = require('../cancellation');
+const { calculateEffectiveDate, generateCancellationToken, verifyIdentity } = require('../cancellation');
 
 test('effective date = end of minimum-term month when notice is shorter', () => {
   // Mindestlaufzeit endet 31.07., heute 22.06., Frist 30 Tage (earliest 22.07.)
@@ -24,3 +24,11 @@ test('token is 64 hex chars and unique', () => {
   assert.match(a, /^[0-9a-f]{64}$/);
   assert.notStrictEqual(a, b);
 });
+
+test('verifyIdentity matches last name case-insensitively', () => {
+  const booking = { last_name: 'Müller', email: 'a@b.de' };
+  assert.strictEqual(verifyIdentity(booking, '  müller '), true);
+  assert.strictEqual(verifyIdentity(booking, 'A@B.DE'), true);
+  assert.strictEqual(verifyIdentity(booking, 'Meier'), false);
+});
+
