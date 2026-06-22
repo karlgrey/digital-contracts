@@ -40,7 +40,6 @@ rent-it-digital/
 │   ├── agb.html          # Allgemeine Geschäftsbedingungen
 │   ├── datenschutz.html  # Datenschutzerklärung (DSGVO)
 │   └── index.html        # Landing Page
-├── CLAUDE-CODE-SPEC.md   # Ursprüngliche Spezifikation
 └── SETUP-GUIDE.md        # Diese Datei
 ```
 
@@ -204,18 +203,19 @@ Oder im Admin-Panel unter Vertragsvorlagen bearbeiten.
 | Methode | Endpoint | Beschreibung |
 |---|---|---|
 | GET | /api/locations | Alle Standorte |
-| GET | /api/vehicle-types | Alle Fahrzeugtypen |
 | GET | /api/pricing/:locationId | Preise für Standort |
 | GET | /api/availability | Verfügbarkeit prüfen |
 | POST | /api/bookings | Neue Buchung erstellen |
 | GET | /api/contract-preview/:id | Vertragsvorschau (HTML) |
 | GET | /api/contract/:id | Vertrag als PDF |
 | GET | /api/invite/:token | Invite-Token einlösen |
+| GET | /healthz | Health-Check |
 
 ### Admin (Bearer Token Auth)
 | Methode | Endpoint | Beschreibung |
 |---|---|---|
 | POST | /api/admin/auth/login | Login |
+| POST | /api/admin/auth/logout | Logout |
 | GET | /api/admin/dashboard | Dashboard-Stats |
 | GET | /api/admin/bookings | Buchungen (mit Filtern) |
 | GET | /api/admin/bookings/export.csv | CSV-Export |
@@ -224,7 +224,9 @@ Oder im Admin-Panel unter Vertragsvorlagen bearbeiten.
 | GET/POST/PUT/DELETE | /api/admin/companies/* | Firmen CRUD |
 | GET/POST/PUT/DELETE | /api/admin/locations/* | Standorte CRUD |
 | GET/PUT | /api/admin/pricing/config | Grundpreis lesen/ändern |
+| GET/POST/DELETE | /api/admin/pricing/overrides | Preis-Overrides |
 | GET/POST/DELETE | /api/admin/discounts/* | Rabatte CRUD |
+| PUT | /api/admin/discounts/:id/toggle | Rabatt aktiv/inaktiv |
 | GET/POST/DELETE | /api/admin/blackouts/* | Sperrzeiten CRUD |
 | GET/POST | /api/admin/templates/* | Vertragsvorlagen |
 | POST | /api/admin/invite-tokens | Einladungslink erstellen |
