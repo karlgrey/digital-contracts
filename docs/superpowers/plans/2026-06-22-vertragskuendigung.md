@@ -295,7 +295,11 @@ git commit -m "Generate cancellation_token on booking creation"
 
 ### Task 5: DB-Helper & Nachtrag-PDF in cancellation.js
 
+> **Designentscheidung (vom Auftraggeber, ersetzt Plan-Default):** Der SVG-Signatur-Renderer wird NICHT in cancellation.js dupliziert, sondern in ein neues, gemeinsames Modul `pdf-utils.js` extrahiert, das sowohl `server-v2.js` als auch `cancellation.js` importieren. Keine Logik-Duplikation, kein Zirkelbezug.
+
 **Files:**
+- Create: `pdf-utils.js`
+- Modify: `server-v2.js` (lokales `renderSVGSignature` durch Import ersetzen)
 - Modify: `cancellation.js`
 - Test: `test/cancellation.test.js`
 
@@ -380,36 +384,29 @@ function createCancellation(db, opts) {
 Run: `node --test test/cancellation.test.js`
 Expected: PASS — alle Tests.
 
-- [ ] **Step 5: Nachtrag-PDF-Funktion implementieren**
+- [ ] **Step 4b: Gemeinsames `pdf-utils.js` extrahieren**
 
-In `cancellation.js` ergänzen. Eigener, minimaler SVG-Signatur-Renderer (bewusst lokal gehalten, damit das Modul ohne Server-Abhängigkeit baut):
+Den bestehenden `renderSVGSignature`-Renderer aus `server-v2.js` (~Zeile 220-243) in ein neues Modul `pdf-utils.js` verschieben, damit beide Module ihn nutzen. Create `pdf-utils.js` mit dem **wörtlich aus `server-v2.js` übernommenen** Funktionskörper (nicht neu schreiben — verschieben):
 
 ```javascript
-function renderSVGSignature(doc, svgString, x, y) {
-  try {
-    const pathMatches = svgString.match(/d="([^"]+)"/g) || [];
-    doc.save();
-    doc.translate(x, y).scale(0.35);
-    doc.lineWidth(2).strokeColor('#1d1d1f');
-    for (const m of pathMatches) {
-      const d = m.slice(3, -1);
-      const tokens = d.split(/\s+/);
-      for (let i = 0; i < tokens.length; i += 3) {
-        const type = tokens[i];
-        const px = parseFloat(tokens[i + 1]);
-        const py = parseFloat(tokens[i + 2]);
-        if (Number.isNaN(px) || Number.isNaN(py)) continue;
-        if (type === 'M') doc.moveTo(px, py);
-        else if (type === 'L') doc.lineTo(px, py);
-      }
-    }
-    doc.stroke();
-    doc.restore();
-  } catch (e) {
-    console.error('Error rendering SVG signature (cancellation):', e);
-  }
-}
+// pdf-utils.js — gemeinsame PDFKit-Hilfsfunktionen
+const renderSVGSignature = (doc, svgString, x, y) => {
+  // ... exakt der bestehende Funktionskörper aus server-v2.js ...
+};
 
+module.exports = { renderSVGSignature };
+```
+
+In `server-v2.js`: die lokale Funktionsdefinition `renderSVGSignature` entfernen und stattdessen oben importieren: `const { renderSVGSignature } = require('./pdf-utils');`. `renderSignatures` (das `renderSVGSignature` aufruft) bleibt unverändert und nutzt den Import.
+
+Verifizieren, dass das Vertrags-PDF weiterhin baut:
+Run: `node -e "require('./server-v2.js')" ` ist nicht sinnvoll (startet Server) — stattdessen: nach Server-Start ein bestehendes Vertrags-PDF abrufen und prüfen, dass es Bytes liefert (analog Task 9 Step 4). Kein Funktionsverlust.
+
+- [ ] **Step 5: Nachtrag-PDF-Funktion implementieren**
+
+In `cancellation.js` ergänzen. `renderSVGSignature` aus dem gemeinsamen Modul importieren (oben im File): `const { renderSVGSignature } = require('./pdf-utils');` — KEINE lokale Kopie.
+
+```javascript
 function fmtDE(iso) {
   return new Date(iso + (iso.length === 10 ? 'T00:00:00Z' : ''))
     .toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
