@@ -452,7 +452,7 @@ async function loadContractPreview() {
         <p>(2) Der Stellplatz dient zum Abstellen des Fahrzeugs: ${vehicleLabel}.</p>
 
         <h2>§2 Mietzeit</h2>
-        <p>(1) Mietbeginn: ${new Date(state.startDate).toLocaleDateString('de-DE')}, Mietende: ${new Date(state.endDate).toLocaleDateString('de-DE')}</p>
+        <p>(1) Mietbeginn: ${new Date(state.startDate).toLocaleDateString('de-DE')}, Mindestlaufzeit bis: ${new Date(state.endDate).toLocaleDateString('de-DE')}</p>
 
         <h2>§3 Miete / Kaution</h2>
         <p>(1) Monatsmiete: € ${state.pricing.monthlyPrice.toFixed(2)} (Brutto)</p>
