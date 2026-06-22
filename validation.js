@@ -135,6 +135,35 @@ const validators = {
     handleValidationErrors
   ],
 
+  // Cancellation validators
+  cancellationToken: [
+    param('token').isString().isLength({ min: 32, max: 128 }).withMessage('Valid token required'),
+    handleValidationErrors
+  ],
+
+  verifyCancellation: [
+    param('token').isString().isLength({ min: 32, max: 128 }),
+    body('identifier').trim().isLength({ min: 1, max: 200 }).withMessage('Name oder E-Mail erforderlich'),
+    handleValidationErrors
+  ],
+
+  submitCancellation: [
+    param('token').isString().isLength({ min: 32, max: 128 }),
+    body('identifier').trim().isLength({ min: 1, max: 200 }).withMessage('Name oder E-Mail erforderlich'),
+    body('reason').optional({ nullable: true }).trim().isLength({ max: 1000 }),
+    body('signatureImage').isString().withMessage('Signature image required'),
+    body('signatureSVG').isString().withMessage('Signature SVG required'),
+    handleValidationErrors
+  ],
+
+  ownerCancel: [
+    param('bookingId').isInt({ min: 1 }),
+    body('reason').optional({ nullable: true }).trim().isLength({ max: 1000 }),
+    body('signatureImage').isString().withMessage('Signature image required'),
+    body('signatureSVG').isString().withMessage('Signature SVG required'),
+    handleValidationErrors
+  ],
+
   // Query parameter validators
   bookingFilters: [
     query('status').optional().isIn(['pending_customer_signature', 'pending_owner_signature', 'completed']),
