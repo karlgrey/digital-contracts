@@ -123,7 +123,7 @@ function generateCancellationPDFBuffer(db, bookingId) {
 
     doc.moveDown(2);
     doc.fontSize(8).fillColor('#666')
-      .text(`Cancellation for Contract ID: ${booking.id} | Generated: ${new Date().toISOString()}`, { align: 'center' });
+      .text(`Kündigung zu Vertrag Nr. ${booking.id} | Erstellt: ${new Date().toISOString()}`, { align: 'center' });
 
     doc.end();
   });

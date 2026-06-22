@@ -132,8 +132,7 @@ const sendContractCompleted = async (booking, pdfBuffer, companyEmail) => {
  * Send signed cancellation (Nachtrag) to customer and company
  */
 const sendCancellationConfirmation = async (booking, cancellation, pdfBuffer, companyEmail) => {
-  const recipients = [booking.email];
-  if (companyEmail) recipients.push(companyEmail);
+  const recipients = [...new Set([booking.email, companyEmail].filter(Boolean))];
 
   const fmt = (iso) => new Date(iso + 'T00:00:00Z')
     .toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });

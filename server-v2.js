@@ -1649,7 +1649,7 @@ app.post('/api/admin/bookings/:bookingId/cancel', auth.requireAuth, validators.o
         FROM bookings b JOIN locations l ON b.location_id = l.id
         LEFT JOIN companies c ON l.company_id = c.id WHERE b.id = ?
       `).get(req.params.bookingId);
-    if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' });
+    if (!booking) return res.status(404).json({ success: false, error: 'Buchung nicht gefunden' });
     if (booking.status === 'terminated' || cancellation.hasCancellation(db, booking.id)) {
       return res.status(409).json({ success: false, error: 'Bereits gekündigt.' });
     }

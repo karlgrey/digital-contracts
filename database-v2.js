@@ -226,6 +226,9 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cancellations_booking
+    ON contract_cancellations(booking_id);
+
   -- Indexes
   CREATE INDEX IF NOT EXISTS idx_bookings_location ON bookings(location_id);
   CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
