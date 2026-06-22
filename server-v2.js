@@ -367,6 +367,16 @@ const buildTemplateData = (booking) => {
   };
 };
 
+const renderCancellationNotice = (doc, booking) => {
+  const baseUrl = process.env.BASE_URL || 'https://str.remoterepublic.com';
+  const url = `${baseUrl}/kuendigung?token=${booking.cancellation_token}`;
+  doc.moveDown(1.5);
+  doc.fontSize(10).font('Helvetica-Oblique').fillColor('#444');
+  doc.text(`Hinweis zur Kündigung: Diesen Vertrag können Sie online kündigen unter:`);
+  doc.fillColor('#1a0dab').text(url, { link: url, underline: true });
+  doc.fillColor('#000');
+};
+
 const generateContractPDFBuffer = (bookingId) => {
   return new Promise((resolve, reject) => {
     const booking = getBookingForContract(bookingId);
@@ -382,6 +392,7 @@ const generateContractPDFBuffer = (bookingId) => {
     doc.on('error', reject);
 
     renderMarkdownToPDF(doc, renderedBody);
+    renderCancellationNotice(doc, booking);
     renderSignatures(doc, booking);
     doc.end();
   });
