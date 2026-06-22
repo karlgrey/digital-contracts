@@ -15,6 +15,7 @@ const auth = require('./auth');
 const validators = require('./validation');
 const pricing = require('./pricing');
 const mailer = require('./email');
+const cancellation = require('./cancellation');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -522,8 +523,8 @@ app.post('/api/bookings', validators.createBooking, (req, res) => {
         template_id, template_version, terms_hash,
         customer_signature_image, customer_signature_svg,
         customer_signature_date, customer_signer_ip, customer_user_agent,
-        status, idempotency_key
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, 'pending_owner_signature', ?)
+        status, idempotency_key, cancellation_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, 'pending_owner_signature', ?, ?)
     `);
 
     const result = stmt.run(
@@ -552,7 +553,8 @@ app.post('/api/bookings', validators.createBooking, (req, res) => {
       String(customerSignatureSVG),
       clientIp,
       userAgent,
-      idempotencyKey ? String(idempotencyKey) : null
+      idempotencyKey ? String(idempotencyKey) : null,
+      cancellation.generateCancellationToken()
     );
 
     // Increment discount usage if applicable
