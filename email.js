@@ -128,8 +128,44 @@ const sendContractCompleted = async (booking, pdfBuffer, companyEmail) => {
   }
 };
 
+/**
+ * Send signed cancellation (Nachtrag) to customer and company
+ */
+const sendCancellationConfirmation = async (booking, cancellation, pdfBuffer, companyEmail) => {
+  const recipients = [...new Set([booking.email, companyEmail].filter(Boolean))];
+
+  const fmt = (iso) => new Date(iso + 'T00:00:00Z')
+    .toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+  try {
+    await getResend().emails.send({
+      from: FROM_ADDRESS(),
+      to: recipients,
+      subject: `Kündigung bestätigt #${booking.id} – Stellplatz ${booking.location_name}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #d9534f;">Kündigung bestätigt</h2>
+          <p>Hallo ${booking.first_name} ${booking.last_name},</p>
+          <p>die Kündigung des Stellplatzmietvertrags #${booking.id} wurde erfasst und unterschrieben.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Standort</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${booking.location_name}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Vertragsende (wirksam zum)</td><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600;">${fmt(cancellation.effective_date)}</td></tr>
+          </table>
+          <p>Den unterschriebenen Nachtrag finden Sie als PDF im Anhang.</p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">Diese E-Mail wurde automatisch generiert.</p>
+        </div>
+      `,
+      attachments: [{ filename: `Kuendigung_${booking.id}.pdf`, content: pdfBuffer }]
+    });
+    console.log(`✉ Cancellation PDF sent to ${recipients.join(', ')}`);
+  } catch (error) {
+    console.error('Error sending cancellation email:', error);
+  }
+};
+
 module.exports = {
   sendBookingConfirmation,
   sendAdminNotification,
-  sendContractCompleted
+  sendContractCompleted,
+  sendCancellationConfirmation
 };

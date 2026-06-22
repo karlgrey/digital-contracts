@@ -202,12 +202,32 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- NEW: Contract Cancellations
+  CREATE TABLE IF NOT EXISTS contract_cancellations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_id INTEGER NOT NULL,
+    initiated_by TEXT NOT NULL CHECK(initiated_by IN ('customer', 'owner')),
+    reason TEXT,
+    notice_date DATE NOT NULL,
+    effective_date DATE NOT NULL,
+    signature_svg TEXT,
+    signature_image TEXT,
+    signature_date DATETIME,
+    signer_ip TEXT,
+    signer_user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id)
+  );
+
   -- Settings (key-value store for global config)
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cancellations_booking
+    ON contract_cancellations(booking_id);
 
   -- Indexes
   CREATE INDEX IF NOT EXISTS idx_bookings_location ON bookings(location_id);
@@ -247,7 +267,8 @@ const checkAndMigrateBookings = () => {
       'owner_user_agent TEXT',
       'invite_token_id INTEGER',
       'idempotency_key TEXT',
-      'updated_at DATETIME DEFAULT CURRENT_TIMESTAMP'
+      'updated_at DATETIME DEFAULT CURRENT_TIMESTAMP',
+      'cancellation_token TEXT'
     ];
 
     for (const col of newColumns) {
@@ -447,8 +468,22 @@ const ensureDefaultSettings = () => {
   }
 };
 
+const backfillCancellationTokens = () => {
+  try {
+    const rows = db.prepare('SELECT id FROM bookings WHERE cancellation_token IS NULL').all();
+    const update = db.prepare('UPDATE bookings SET cancellation_token = ? WHERE id = ?');
+    for (const row of rows) {
+      update.run(crypto.randomBytes(32).toString('hex'), row.id);
+    }
+    if (rows.length > 0) console.log(`✓ Backfilled cancellation_token for ${rows.length} bookings`);
+  } catch (error) {
+    console.error('Backfill cancellation_token error:', error);
+  }
+};
+
 // Run migrations
 checkAndMigrateBookings();
+backfillCancellationTokens();
 migrateLocationsAccessCode();
 migrateCompaniesEmail();
 ensureDefaultSettings();

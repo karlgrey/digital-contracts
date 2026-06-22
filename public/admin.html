@@ -130,6 +130,11 @@
             color: #155724;
         }
 
+        .status-terminated {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .action-btn {
             padding: 6px 12px;
             margin-right: 4px;
@@ -569,6 +574,26 @@
         </div>
     </div>
 
+    <!-- Cancellation Modal -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <h2>Vertrag kündigen</h2>
+            <div class="form-group">
+                <label for="cancelReason">Kündigungsgrund (optional)</label>
+                <textarea id="cancelReason" placeholder="z.B. Eigenbedarf"></textarea>
+            </div>
+            <p>Bitte unterschreiben Sie die Kündigung digital:</p>
+            <div class="signature-area">
+                <canvas id="cancelSignatureCanvas" width="400" height="150"></canvas>
+                <button class="action-btn" onclick="clearCancelSignature()" style="width: auto; margin: 0; background: #ff6b6b;">Löschen</button>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="submitCancellation()">Vertrag kündigen</button>
+                <button class="btn-secondary" onclick="closeCancelModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Company Modal -->
     <div id="companyModal" class="modal">
         <div class="modal-content">
@@ -780,10 +805,13 @@
                 tbody.innerHTML = '';
 
                 bookings.forEach(booking => {
-                    const statusLabel = booking.status === 'completed' ? 'Abgeschlossen' : 
+                    const statusLabel = booking.status === 'completed' ? 'Abgeschlossen' :
+                                       booking.status === 'terminated' ? 'Gekündigt' :
                                        booking.status === 'pending_owner_signature' ? 'Vermieter unterschreiben' :
                                        'Kunde unterschreiben';
-                    const statusClass = booking.status === 'completed' ? 'status-completed' : 'status-pending';
+                    const statusClass = booking.status === 'completed' ? 'status-completed' :
+                                       booking.status === 'terminated' ? 'status-terminated' :
+                                       'status-pending';
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -798,6 +826,11 @@
                                 <button class="action-btn" onclick="openSignatureModal(${booking.id})">Unterschreiben</button>
                             ` : ''}
                             ${booking.status === 'completed' ? `
+                                <button class="action-btn" onclick="viewContractPreview(${booking.id})">Vertrag ansehen</button>
+                                <button class="action-btn" onclick="downloadContract(${booking.id})">PDF herunterladen</button>
+                                <button class="action-btn" onclick="openCancelModal(${booking.id})" style="background:#e67e22;">Vertrag kündigen</button>
+                            ` : ''}
+                            ${booking.status === 'terminated' ? `
                                 <button class="action-btn" onclick="viewContractPreview(${booking.id})">Vertrag ansehen</button>
                                 <button class="action-btn" onclick="downloadContract(${booking.id})">PDF herunterladen</button>
                             ` : ''}
@@ -840,77 +873,138 @@
             }
         }
 
-        // Signature Modal
-        const adminCanvas = document.getElementById('adminSignatureCanvas');
-        const adminCtx = adminCanvas.getContext('2d');
-        let adminIsDrawing = false;
-        let adminPaths = []; // Store all paths for SVG export
-        let adminCurrentPath = []; // Current path being drawn
+        // Reusable signature-pad factory: attaches drawing handlers to a canvas
+        // and returns an object exposing the captured paths, a clear() and toSVG().
+        // Used for both the owner-signature modal and the cancellation modal so the
+        // ~30 lines of canvas drawing logic live in exactly one place.
+        function createSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const pad = { canvas, ctx, paths: [] };
+            let isDrawing = false;
+            let currentPath = [];
 
-        adminCanvas.addEventListener('mousedown', (e) => {
-            adminIsDrawing = true;
-            const rect = adminCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            adminCurrentPath = [{x, y}]; // Start new path
-            adminCtx.beginPath();
-            adminCtx.moveTo(x, y);
-        });
-
-        adminCanvas.addEventListener('mousemove', (e) => {
-            if (!adminIsDrawing) return;
-            const rect = adminCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            adminCurrentPath.push({x, y}); // Add point to current path
-            adminCtx.lineTo(x, y);
-            adminCtx.lineWidth = 2;
-            adminCtx.lineCap = 'round';
-            adminCtx.lineJoin = 'round';
-            adminCtx.stroke();
-        });
-
-        adminCanvas.addEventListener('mouseup', () => {
-            if (adminIsDrawing && adminCurrentPath.length > 0) {
-                adminPaths.push([...adminCurrentPath]); // Save completed path
-            }
-            adminIsDrawing = false;
-            adminCurrentPath = [];
-        });
-
-        adminCanvas.addEventListener('mouseout', () => {
-            if (adminIsDrawing && adminCurrentPath.length > 0) {
-                adminPaths.push([...adminCurrentPath]); // Save completed path
-            }
-            adminIsDrawing = false;
-            adminCurrentPath = [];
-        });
-
-        function clearAdminSignature() {
-            adminCtx.clearRect(0, 0, adminCanvas.width, adminCanvas.height);
-            adminPaths = [];
-            adminCurrentPath = [];
-        }
-
-        function adminCanvasToSVG() {
-            const width = adminCanvas.offsetWidth;
-            const height = adminCanvas.offsetHeight;
-
-            let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
-
-            adminPaths.forEach(path => {
-                if (path.length < 2) return;
-
-                let pathData = `M ${path[0].x} ${path[0].y}`;
-                for (let i = 1; i < path.length; i++) {
-                    pathData += ` L ${path[i].x} ${path[i].y}`;
-                }
-
-                svg += `<path d="${pathData}" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                currentPath = [{x, y}];
+                ctx.beginPath();
+                ctx.moveTo(x, y);
             });
 
-            svg += '</svg>';
-            return svg;
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                currentPath.push({x, y});
+                ctx.lineTo(x, y);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            });
+
+            const endStroke = () => {
+                if (isDrawing && currentPath.length > 0) {
+                    pad.paths.push([...currentPath]);
+                }
+                isDrawing = false;
+                currentPath = [];
+            };
+            canvas.addEventListener('mouseup', endStroke);
+            canvas.addEventListener('mouseout', endStroke);
+
+            pad.clear = function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pad.paths = [];
+                currentPath = [];
+            };
+
+            pad.toSVG = function () {
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+                let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
+                pad.paths.forEach(path => {
+                    if (path.length < 2) return;
+                    let pathData = `M ${path[0].x} ${path[0].y}`;
+                    for (let i = 1; i < path.length; i++) {
+                        pathData += ` L ${path[i].x} ${path[i].y}`;
+                    }
+                    svg += `<path d="${pathData}" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+                });
+                svg += '</svg>';
+                return svg;
+            };
+
+            return pad;
+        }
+
+        // Owner-signature modal pad
+        const adminSignaturePad = createSignaturePad('adminSignatureCanvas');
+
+        function clearAdminSignature() {
+            adminSignaturePad.clear();
+        }
+
+        // Cancellation modal pad (reuses the same signature-pad factory)
+        const cancelSignaturePad = createSignaturePad('cancelSignatureCanvas');
+        let currentBookingForCancel = null;
+
+        function clearCancelSignature() {
+            cancelSignaturePad.clear();
+        }
+
+        function openCancelModal(bookingId) {
+            currentBookingForCancel = bookingId;
+            cancelSignaturePad.clear();
+            document.getElementById('cancelReason').value = '';
+            document.getElementById('cancelModal').classList.add('active');
+        }
+
+        function closeCancelModal() {
+            document.getElementById('cancelModal').classList.remove('active');
+            currentBookingForCancel = null;
+        }
+
+        async function submitCancellation() {
+            if (!currentBookingForCancel) return;
+
+            if (cancelSignaturePad.paths.length === 0) {
+                alert('Bitte unterschreiben Sie die Kündigung!');
+                return;
+            }
+
+            const reason = document.getElementById('cancelReason').value.trim() || null;
+            const signatureImage = cancelSignaturePad.canvas.toDataURL('image/png');
+            const signatureSVG = cancelSignaturePad.toSVG();
+
+            try {
+                const response = await fetch(`/api/admin/bookings/${currentBookingForCancel}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason, signatureImage, signatureSVG })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    alert('Fehler: ' + (data.error || response.statusText));
+                    return;
+                }
+
+                const [y, m, d] = data.effectiveDate.split('-');
+                const effectiveDateDE = `${d}.${m}.${y}`;
+                alert(`Vertrag gekündigt zum ${effectiveDateDE}.`);
+                closeCancelModal();
+                loadBookings();
+            } catch (error) {
+                alert('Fehler: ' + error.message);
+            }
         }
 
         function openSignatureModal(bookingId) {
@@ -927,13 +1021,13 @@
         async function submitAdminSignature() {
             if (!currentBookingForSignature) return;
 
-            if (adminPaths.length === 0) {
+            if (adminSignaturePad.paths.length === 0) {
                 alert('Bitte unterschreiben Sie das Formular!');
                 return;
             }
 
-            const imageData = adminCanvas.toDataURL();
-            const svgData = adminCanvasToSVG();
+            const imageData = adminSignaturePad.canvas.toDataURL();
+            const svgData = adminSignaturePad.toSVG();
 
             try {
                 const response = await fetch(`/api/admin/bookings/${currentBookingForSignature}/sign-owner`, {

@@ -40,7 +40,6 @@ rent-it-digital/
 │   ├── agb.html          # Allgemeine Geschäftsbedingungen
 │   ├── datenschutz.html  # Datenschutzerklärung (DSGVO)
 │   └── index.html        # Landing Page
-├── CLAUDE-CODE-SPEC.md   # Ursprüngliche Spezifikation
 └── SETUP-GUIDE.md        # Diese Datei
 ```
 
@@ -198,33 +197,41 @@ db.prepare(\"UPDATE contract_templates SET body_md = ? WHERE is_active = 1\").ru
 
 Oder im Admin-Panel unter Vertragsvorlagen bearbeiten.
 
+**Hinweis Kündigungsklausel (§2):** Das Default-Template enthält bereits eine Kündigungsklausel in §2 (Frist von einem Monat zum Monatsende). Bei **bestehenden** Production-DBs greift dieses Default nicht automatisch — die §2-Klausel muss manuell in das aktive Template übernommen werden (z. B. über das Admin-Panel unter Vertragsvorlagen). Der Kündigungs-Deeplink im PDF wird hingegen automatisch beim PDF-Bau aus `BASE_URL` und dem Buchungs-Token zusammengesetzt und erfordert **keine** Änderung am Template.
+
 ## API-Übersicht
 
 ### Public
 | Methode | Endpoint | Beschreibung |
 |---|---|---|
 | GET | /api/locations | Alle Standorte |
-| GET | /api/vehicle-types | Alle Fahrzeugtypen |
 | GET | /api/pricing/:locationId | Preise für Standort |
 | GET | /api/availability | Verfügbarkeit prüfen |
 | POST | /api/bookings | Neue Buchung erstellen |
 | GET | /api/contract-preview/:id | Vertragsvorschau (HTML) |
 | GET | /api/contract/:id | Vertrag als PDF |
 | GET | /api/invite/:token | Invite-Token einlösen |
+| POST | /api/cancellation/:token/verify | Kündigung: Token prüfen, Buchungsdetails zurückgeben |
+| POST | /api/cancellation/:token/submit | Kündigung einreichen und Bestätigungsmail versenden |
+| GET | /healthz | Health-Check |
 
 ### Admin (Bearer Token Auth)
 | Methode | Endpoint | Beschreibung |
 |---|---|---|
 | POST | /api/admin/auth/login | Login |
+| POST | /api/admin/auth/logout | Logout |
 | GET | /api/admin/dashboard | Dashboard-Stats |
 | GET | /api/admin/bookings | Buchungen (mit Filtern) |
 | GET | /api/admin/bookings/export.csv | CSV-Export |
 | POST | /api/admin/bookings/:id/sign-owner | Vermieter-Unterschrift |
+| POST | /api/admin/bookings/:bookingId/cancel | Buchung als gekündigt markieren (`terminated`) |
 | DELETE | /api/admin/bookings/:id | Buchung löschen |
 | GET/POST/PUT/DELETE | /api/admin/companies/* | Firmen CRUD |
 | GET/POST/PUT/DELETE | /api/admin/locations/* | Standorte CRUD |
 | GET/PUT | /api/admin/pricing/config | Grundpreis lesen/ändern |
+| GET/POST/DELETE | /api/admin/pricing/overrides | Preis-Overrides |
 | GET/POST/DELETE | /api/admin/discounts/* | Rabatte CRUD |
+| PUT | /api/admin/discounts/:id/toggle | Rabatt aktiv/inaktiv |
 | GET/POST/DELETE | /api/admin/blackouts/* | Sperrzeiten CRUD |
 | GET/POST | /api/admin/templates/* | Vertragsvorlagen |
 | POST | /api/admin/invite-tokens | Einladungslink erstellen |
@@ -239,6 +246,7 @@ Oder im Admin-Panel unter Vertragsvorlagen bearbeiten.
 | /admin | Admin-Panel (Login erforderlich) |
 | /agb | Allgemeine Geschäftsbedingungen |
 | /datenschutz | Datenschutzerklärung |
+| /kuendigung | Kündigungsformular (Token-basiert, aus PDF-Deeplink) |
 
 ## Buchungsformular-Validierung
 
@@ -259,3 +267,12 @@ Das Buchungsformular validiert in jedem Schritt:
 **Step 3 — Vertragsvorschau**
 
 **Step 4 — Unterschrift und Absenden**
+
+## Buchungs-Status
+
+| Status | Beschreibung |
+|---|---|
+| `pending` | Buchung eingegangen, noch keine Unterschriften |
+| `tenant_signed` | Mieter hat unterschrieben |
+| `active` | Beide Parteien haben unterschrieben, Vertrag aktiv |
+| `terminated` | Vertrag wurde gekündigt (durch Mieter über Deeplink oder durch Admin) |
